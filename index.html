@@ -132,14 +132,59 @@
         
         <div id="errorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">×</span><p id="errorMessage"></p><button class="btn btn-primary" onclick="closeModal()">بستن</button></div></div>
         <div id="aboutModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeAboutModal()">×</span><h2>درباره برنامه</h2><p><strong>نویسنده برنامه:</strong> سعید گلستانی</p><p><strong>تاریخ ارائه:</strong> ۲۱ تیر ماه ۱۴۰۴</p><p><strong>تلفن تماس:</strong> 09123175863</p><div style="text-align: center; margin-top: 25px;"><button class="btn btn-primary" onclick="closeAboutModal()">بستن</button></div></div></div>
-        
+     
+		<div id="helpModal" class="modal">
+		<div class="modal-content" style="max-width: 700px; text-align: right;">
+			<span class="close-btn" onclick="closeHelpModal()">×</span>
+			<h2>راهنمای استفاده از برنامه</h2>
+			
+			<h4>مقدمه</h4>
+			<p>این برنامه به شما کمک می‌کند تا بهترین طرح‌های ممکن برای برش ورق از کویل‌های موجود را پیدا کرده و ضایعات (پرتی) را به حداقل برسانید.</p>
+			
+			<hr>
+			
+			<h4>مرحله ۱: ورود کویل‌ها</h4>
+			<ul>
+				<li><strong>نوع ورق، ویژگی، عرض و ضخامت:</strong> مشخصات فیزیکی کویل خود را وارد کنید. این مشخصات برای تطبیق با سفارش‌ها استفاده می‌شوند.</li>
+				<li><strong>وزن و دانسیته:</strong> این دو مقدار برای محاسبه طول کل کویل به کار می‌روند. طول بیشتر به معنای تعداد برش بیشتر است.</li>
+			</ul>
+
+			<h4>مرحله ۲: ورود ابعاد برش</h4>
+			<ul>
+				<li>در این بخش، ابعاد ورق‌هایی که می‌خواهید برش دهید را وارد کنید.</li>
+				<li>توجه کنید که لیست‌های کشویی **"ضخامت"** و **"ویژگی"** فقط مقادیری را نمایش می‌دهند که برای آن‌ها کویل موجود در انبار (مرحله ۱) ثبت شده باشد.</li>
+			</ul>
+
+			<h4>نمایش نتایج</h4>
+			<p>پس از کلیک روی دکمه "نمایش طرح‌های ممکن"، برنامه تمام ترکیب‌های ممکن را بر اساس شرایط زیر نمایش می‌دهد:</p>
+			<ul>
+				<li>تطابق کامل **نوع ورق، ویژگی و ضخامت** بین کویل و سفارش.</li>
+				<li>مجموع عرض ورق‌های سفارش نباید از عرض کویل بیشتر باشد.</li>
+				<li>درصد ضایعات طرح باید کمتر از مقدار تعیین شده توسط شما باشد.</li>
+			</ul>
+
+			<hr>
+
+			<h4>ورود و خروج با Excel</h4>
+			<p>برای ورود اطلاعات از فایل اکسل، فایل شما باید دقیقاً شامل ستون‌های زیر (با همین نام) باشد:</p>
+			<p><strong>برای کویل‌ها:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code>, <code>دانسیته</code></p>
+			<p><strong>برای ابعاد برش:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
+			
+			<div style="text-align: center; margin-top: 25px;">
+				<button class="btn btn-primary" onclick="closeHelpModal()">متوجه شدم</button>
+			</div>
+    </div>
+		</div>
+
         <div id="page-coils" class="page active"></div>
         <div id="page-sheets" class="page"></div>
         <div id="page-results" class="page"></div>
         <div id="page-settings" class="page"></div>
 
         <div class="app-footer">
-            <button class="btn btn-secondary" onclick="showSettingsPage()">تنظیمات</button>
+ 			<button class="btn btn-warning" onclick="showHelpModal()">راهنما</button>
+				<button class="btn btn-secondary" onclick="showSettingsPage()">تنظیمات</button>
+			</div>
         </div>
     </div>
 
@@ -550,6 +595,14 @@ function showAlert(message) {
 function closeModal() { document.getElementById('errorModal').style.display = 'none'; }
 function showAboutModal() { document.getElementById('aboutModal').style.display = 'flex'; }
 function closeAboutModal() { document.getElementById('aboutModal').style.display = 'none'; }
+
+function showHelpModal() {
+    document.getElementById('helpModal').style.display = 'flex';
+}
+
+function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
+}
 
 // --- DATA MANAGEMENT & LOCAL STORAGE ---
 function saveDataToLocalStorage() {
