@@ -441,30 +441,62 @@ function loadSettings() {
     }
 }
 
+// ******** FUNCTION REPLACED (START) ********
+// This function has been rewritten to be safer.
 function saveSettings() {
-    // تغییرات فقط در صورت باز بودن بخش پیشرفته ذخیره می‌شوند
+    // Create a temporary object to hold potential changes.
+    const potentialSettings = JSON.parse(JSON.stringify(settings));
+
+    // Handle advanced settings only if they are visible.
+    // Types and Features are managed directly and don't need to be in this transaction.
     if (document.getElementById('advanced-settings-fields').style.display === 'block') {
-        settings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
+        potentialSettings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
         
         const newUsername = document.getElementById('setting-username').value.trim();
+        if (newUsername) {
+            potentialSettings.username = newUsername;
+        }
+        
         const newPassword = document.getElementById('setting-password').value.trim();
+        if (newPassword) {
+            if (confirm('آیا مطمئن هستید که می‌خواهید رمز عبور کاربر را تغییر دهید؟')) {
+                potentialSettings.password = newPassword;
+            } else {
+                alert('تغییر رمز عبور کاربر لغو شد. هیچ تغییری ذخیره نشد.');
+                document.getElementById('setting-password').value = ''; // Clear the input field
+                return; // Abort the entire save operation
+            }
+        }
+
         const newSuperPassword = document.getElementById('setting-super-password').value.trim();
+        if (newSuperPassword) {
+            if (confirm('آیا مطمئن هستید که می‌خواهید رمز عبور پیشرفته را تغییر دهید؟')) {
+                potentialSettings.superPassword = newSuperPassword;
+            } else {
+                alert('تغییر رمز عبور پیشرفته لغو شد. هیچ تغییری ذخیره نشد.');
+                document.getElementById('setting-super-password').value = ''; // Clear the input field
+                return; // Abort the entire save operation
+            }
+        }
         
-        if (newUsername) settings.username = newUsername;
-        if (newPassword) settings.password = newPassword;
-        if (newSuperPassword) settings.superPassword = newSuperPassword;
-        
-        settings.expireDate = document.getElementById('setting-expire-date').value;
+        potentialSettings.expireDate = document.getElementById('setting-expire-date').value;
     }
 
+    // If all confirmations passed, apply the changes to the main settings object.
+    settings = potentialSettings;
+
+    // Save all settings (including types/features which were modified directly on the original object)
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     
+    // Update UI elements based on new settings
     updateLogoVisibility(); 
     populateFormDropdowns();
     updateDensity();
     
     alert('تنظیمات با موفقیت ذخیره شد.');
 }
+// ******** FUNCTION REPLACED (END) ********
+
 
 function checkExpiration() {
     const today = new Date();
