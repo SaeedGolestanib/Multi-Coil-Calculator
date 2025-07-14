@@ -312,7 +312,9 @@
             color: #aaa; 
         }
         .app-footer { 
-            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-top: 30px;
             border-top: 1px solid #e9ecef;
             padding-top: 15px; 
@@ -329,7 +331,7 @@
             border-radius: 5px;
             margin-bottom: 8px; 
         }
-
+        
         /* --- NEW & IMPROVED PRINT STYLES --- */
         @media print {
             body {
@@ -337,14 +339,12 @@
                 padding: 0;
                 margin: 0;
             }
-
             .container {
                 box-shadow: none !important;
                 border: none;
                 max-width: 100%;
                 padding: 10px;
             }
-
             /* Hide all non-essential interactive elements */
             .nav-buttons, 
             .app-footer, 
@@ -356,13 +356,11 @@
             .section-header .btn-main-action {
                 display: none !important;
             }
-
             /* Ensure logos are visible but don't overlap content */
             .logo-image, .aabsal-logo-image {
                 position: absolute; /* Keep them positioned */
                 display: block;
             }
-            
             /* Ensure the active page is the only one printed */
             .page {
                 display: none !important;
@@ -370,35 +368,29 @@
             .page.active {
                 display: block !important;
             }
-
             /* General styling for print clarity */
             h1, h2, h3, h4, p, li, span, strong, td, th {
                 color: black !important;
                 background: none !important;
                 -webkit-text-fill-color: initial !important;
             }
-            
             table {
                 box-shadow: none;
                 border: 1px solid #ccc;
             }
-
             th {
                 background-color: #f2f2f2 !important; /* Light gray for table headers */
             }
-
             .result-card, .list-section, .form-section {
                 box-shadow: none !important;
                 border: 1px solid #ddd !important;
                 page-break-inside: avoid; /* Prevent elements from splitting across pages */
                 margin-top: 15px;
             }
-
             a[href]:after {
                 content: none !important;
             }
         }
-
     </style>
 </head>
 <body>
@@ -410,41 +402,53 @@
         <h1>سیستم کاوش طرح‌های برش</h1>
         
         <div id="errorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">×</span><p id="errorMessage"></p><button class="btn btn-primary" onclick="closeModal()">بستن</button></div></div>
-        <div id="aboutModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeAboutModal()">×</span><h2>درباره برنامه</h2><p><strong>نویسنده برنامه:</strong> سعید گلستانی</p><p><strong>تاریخ ارائه:</strong> ۲۱ تیر ماه ۱۴۰۴</p><p><strong>تلفن تماس:</strong> 09123175863</p><div style="text-align: center; margin-top: 25px;"><button class="btn btn-primary" onclick="closeAboutModal()">بستن</button></div></div></div>
+        
+        <!-- مودال "درباره برنامه" با فیلد نسخه -->
+        <div id="aboutModal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeAboutModal()">×</span>
+                <h2>درباره برنامه</h2>
+                <p><strong>نسخه برنامه:</strong> <span id="appVersionAbout"></span></p>
+                <p><strong>نویسنده برنامه:</strong> سعید گلستانی</p>
+                <p><strong>تاریخ ارائه:</strong> ۲۱ تیر ماه ۱۴۰۴</p>
+                <p><strong>تلفن تماس:</strong> 09123175863</p>
+                <div style="text-align: center; margin-top: 25px;"><button class="btn btn-primary" onclick="closeAboutModal()">بستن</button></div>
+            </div>
+        </div>
      
 		<div id="helpModal" class="modal">
-		<div class="modal-content" style="max-width: 700px; text-align: right;">
-			<span class="close-btn" onclick="closeHelpModal()">×</span>
-			<h2>راهنمای استفاده از برنامه</h2>
-			<h4>مقدمه</h4>
-			<p>این برنامه به شما کمک می‌کند تا بهترین طرح‌های ممکن برای برش ورق از کویل‌های موجود را پیدا کرده و ضایعات (پرتی) را به حداقل برسانید.</p>
-			<hr>
-			<h4>مرحله ۱: ورود کویل‌ها</h4>
-			<ul>
-				<li><strong>نوع ورق، ویژگی، عرض و ضخامت:</strong> مشخصات فیزیکی کویل خود را وارد کنید. این مشخصات برای تطبیق با سفارش‌ها استفاده می‌شوند.</li>
-				<li><strong>وزن و دانسیته:</strong> این دو مقدار برای محاسبه طول کل کویل به کار می‌روند. طول بیشتر به معنای تعداد برش بیشتر است.</li>
-			</ul>
-			<h4>مرحله ۲: ورود ابعاد برش</h4>
-			<ul>
-				<li>در این بخش، ابعاد ورق‌هایی که می‌خواهید برش دهید را وارد کنید.</li>
-				<li>توجه کنید که لیست‌های کشویی **"ضخامت"** و **"ویژگی"** فقط مقادیری را نمایش می‌دهند که برای آن‌ها کویل موجود در انبار (مرحله ۱) ثبت شده باشد.</li>
-			</ul>
-			<h4>نمایش نتایج</h4>
-			<p>پس از کلیک روی دکمه "نمایش طرح‌های ممکن"، برنامه تمام ترکیب‌های ممکن را بر اساس شرایط زیر نمایش می‌دهد:</p>
-			<ul>
-				<li>تطابق کامل **نوع ورق، ویژگی و ضخامت** بین کویل و سفارش.</li>
-				<li>مجموع عرض ورق‌های سفارش نباید از عرض کویل بیشتر باشد.</li>
-				<li>درصد ضایعات طرح باید کمتر از مقدار تعیین شده توسط شما باشد.</li>
-			</ul>
-			<hr>
-			<h4>ورود و خروج با Excel</h4>
-			<p>برای ورود اطلاعات از فایل اکسل، فایل شما باید دقیقاً شامل ستون‌های زیر (با همین نام) باشد:</p>
-			<p><strong>برای کویل‌ها:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code>, <code>دانسیته</code></p>
-			<p><strong>برای ابعاد برش:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
-			<div style="text-align: center; margin-top: 25px;">
-				<button class="btn btn-primary" onclick="closeHelpModal()">متوجه شدم</button>
-			</div>
-        </div>
+            <div class="modal-content" style="max-width: 700px; text-align: right;">
+                <span class="close-btn" onclick="closeHelpModal()">×</span>
+                <h2>راهنمای استفاده از برنامه</h2>
+                <h4>مقدمه</h4>
+                <p>این برنامه به شما کمک می‌کند تا بهترین طرح‌های ممکن برای برش ورق از کویل‌های موجود را پیدا کرده و ضایعات (پرتی) را به حداقل برسانید.</p>
+                <hr>
+                <h4>مرحله ۱: ورود کویل‌ها</h4>
+                <ul>
+                    <li><strong>نوع ورق، ویژگی، عرض و ضخامت:</strong> مشخصات فیزیکی کویل خود را وارد کنید. این مشخصات برای تطبیق با سفارش‌ها استفاده می‌شوند.</li>
+                    <li><strong>وزن و دانسیته:</strong> این دو مقدار برای محاسبه طول کل کویل به کار می‌روند. طول بیشتر به معنای تعداد برش بیشتر است.</li>
+                </ul>
+                <h4>مرحله ۲: ورود ابعاد برش</h4>
+                <ul>
+                    <li>در این بخش، ابعاد ورق‌هایی که می‌خواهید برش دهید را وارد کنید.</li>
+                    <li>توجه کنید که لیست‌های کشویی **"ضخامت"** و **"ویژگی"** فقط مقادیری را نمایش می‌ده دهند که برای آن‌ها کویل موجود در انبار (مرحله ۱) ثبت شده باشد.</li>
+                </ul>
+                <h4>نمایش نتایج</h4>
+                <p>پس از کلیک روی دکمه "نمایش طرح‌های ممکن"، برنامه تمام ترکیب‌های ممکن را بر اساس شرایط زیر نمایش می‌دهد:</p>
+                <ul>
+                    <li>تطابق کامل **نوع ورق، ویژگی و ضخامت** بین کویل و سفارش.</li>
+                    <li>مجموع عرض ورق‌های سفارش نباید از عرض کویل بیشتر باشد.</li>
+                    <li>درصد ضایعات طرح باید کمتر از مقدار تعیین شده توسط شما باشد.</li>
+                </ul>
+                <hr>
+                <h4>ورود و خروج با Excel</h4>
+                <p>برای ورود اطلاعات از فایل اکسل، فایل شما باید دقیقاً شامل ستون‌های زیر (با همین نام) باشد:</p>
+                <p><strong>برای کویل‌ها:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code>, <code>دانسیته</code></p>
+                <p><strong>برای ابعاد برش:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
+                <div style="text-align: center; margin-top: 25px;">
+                    <button class="btn btn-primary" onclick="closeHelpModal()">متوجه شدم</button>
+                </div>
+            </div>
 		</div>
 
         <div id="page-coils" class="page active"></div>
@@ -452,14 +456,17 @@
         <div id="page-results" class="page"></div>
         <div id="page-settings" class="page"></div>
 
+        <!-- پانویس با قابلیت نمایش نسخه -->
         <div class="app-footer">
  			<button class="btn btn-warning" onclick="showHelpModal()">راهنما</button>
+            <span id="appVersionFooter" style="color: #6c757d; font-size: 14px;"></span>
 			<button class="btn btn-secondary" onclick="showSettingsPage()">تنظیمات</button>
 		</div>
     </div>
 
 <script>
 // --- GLOBAL VARIABLES & CONSTANTS ---
+const APP_VERSION = '2.1.0'; // تعریف نسخه برنامه
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -489,6 +496,7 @@ const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v21';
 document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
+    displayAppVersion(); // نمایش نسخه در ابتدا
     loadSettings();
     updateLogoVisibility(); 
     if (checkExpiration()) return;
@@ -499,6 +507,16 @@ function initializeApp() {
     updateDensity();
     renderCoilList();
     renderSheetOrderList();
+}
+
+// تابع جدید برای نمایش نسخه در بخش‌های مختلف
+function displayAppVersion() {
+    const versionString = `نسخه ${APP_VERSION}`;
+    const aboutEl = document.getElementById('appVersionAbout');
+    const footerEl = document.getElementById('appVersionFooter');
+
+    if (aboutEl) aboutEl.textContent = APP_VERSION;
+    if (footerEl) footerEl.textContent = versionString;
 }
 
 // --- SETTINGS & AUTHENTICATION LOGIC ---
@@ -1495,7 +1513,7 @@ function calculateCoilLength(coil) {
     return lengthMm;
 }
 
-function createPlanCard(plan) {
+functioan createPlanCard(plan) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.style.cssText = "background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
