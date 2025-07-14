@@ -52,7 +52,7 @@
             position: absolute;
             top: 25px;
             left: 25px;
-            width: 100px;
+            width: 95px;
             height: auto;
             z-index: 1;
             transition: transform 0.2s;
@@ -100,7 +100,7 @@
         .section-header h2, .settings-section h3 {
             border-bottom: none;
             margin-bottom: 0;
-            margin-left: auto; /* هدر را به سمت راست هل می‌دهد */
+            margin-left: auto;
         }
         .section-header .io-buttons {
             display: flex;
@@ -113,7 +113,6 @@
             padding: 6px 12px;
             border-radius: 15px;
         }
-        /* استایل اختصاصی برای دکمه‌های اصلی که به هدر منتقل شده‌اند */
         .io-buttons .btn-main-action {
             font-size: 16px;
             padding: 10px 20px;
@@ -224,7 +223,7 @@
         }
         .nav-buttons { 
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around; /* Changed for better centering of print button */
             align-items: center;
             margin-top: 20px;
             flex-wrap: wrap;
@@ -330,6 +329,76 @@
             border-radius: 5px;
             margin-bottom: 8px; 
         }
+
+        /* --- NEW & IMPROVED PRINT STYLES --- */
+        @media print {
+            body {
+                background: none !important;
+                padding: 0;
+                margin: 0;
+            }
+
+            .container {
+                box-shadow: none !important;
+                border: none;
+                max-width: 100%;
+                padding: 10px;
+            }
+
+            /* Hide all non-essential interactive elements */
+            .nav-buttons, 
+            .app-footer, 
+            .operations-cell, 
+            .io-buttons, 
+            .form-buttons-container, 
+            .modal, 
+            .close-btn,
+            .section-header .btn-main-action {
+                display: none !important;
+            }
+
+            /* Ensure logos are visible but don't overlap content */
+            .logo-image, .aabsal-logo-image {
+                position: absolute; /* Keep them positioned */
+                display: block;
+            }
+            
+            /* Ensure the active page is the only one printed */
+            .page {
+                display: none !important;
+            }
+            .page.active {
+                display: block !important;
+            }
+
+            /* General styling for print clarity */
+            h1, h2, h3, h4, p, li, span, strong, td, th {
+                color: black !important;
+                background: none !important;
+                -webkit-text-fill-color: initial !important;
+            }
+            
+            table {
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+
+            th {
+                background-color: #f2f2f2 !important; /* Light gray for table headers */
+            }
+
+            .result-card, .list-section, .form-section {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+                page-break-inside: avoid; /* Prevent elements from splitting across pages */
+                margin-top: 15px;
+            }
+
+            a[href]:after {
+                content: none !important;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -441,14 +510,8 @@ function loadSettings() {
     }
 }
 
-// ******** FUNCTION REPLACED (START) ********
-// This function has been rewritten to be safer.
 function saveSettings() {
-    // Create a temporary object to hold potential changes.
     const potentialSettings = JSON.parse(JSON.stringify(settings));
-
-    // Handle advanced settings only if they are visible.
-    // Types and Features are managed directly and don't need to be in this transaction.
     if (document.getElementById('advanced-settings-fields').style.display === 'block') {
         potentialSettings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
         
@@ -463,8 +526,8 @@ function saveSettings() {
                 potentialSettings.password = newPassword;
             } else {
                 alert('تغییر رمز عبور کاربر لغو شد. هیچ تغییری ذخیره نشد.');
-                document.getElementById('setting-password').value = ''; // Clear the input field
-                return; // Abort the entire save operation
+                document.getElementById('setting-password').value = '';
+                return;
             }
         }
 
@@ -474,29 +537,23 @@ function saveSettings() {
                 potentialSettings.superPassword = newSuperPassword;
             } else {
                 alert('تغییر رمز عبور پیشرفته لغو شد. هیچ تغییری ذخیره نشد.');
-                document.getElementById('setting-super-password').value = ''; // Clear the input field
-                return; // Abort the entire save operation
+                document.getElementById('setting-super-password').value = '';
+                return;
             }
         }
         
         potentialSettings.expireDate = document.getElementById('setting-expire-date').value;
     }
 
-    // If all confirmations passed, apply the changes to the main settings object.
     settings = potentialSettings;
-
-    // Save all settings (including types/features which were modified directly on the original object)
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     
-    // Update UI elements based on new settings
     updateLogoVisibility(); 
     populateFormDropdowns();
     updateDensity();
     
     alert('تنظیمات با موفقیت ذخیره شد.');
 }
-// ******** FUNCTION REPLACED (END) ********
-
 
 function checkExpiration() {
     const today = new Date();
@@ -620,6 +677,7 @@ function buildPageHTML() {
         </div>
         <div class="nav-buttons">
             <button class="btn btn-danger" onclick="startOver()">شروع مجدد</button>
+            <button class="btn btn-primary" onclick="printResults()">چاپ نتایج</button>
             <button class="btn btn-warning" onclick="showSheetPage()">ویرایش ورودی‌ها</button>
         </div>`;
     
@@ -854,7 +912,6 @@ function clearAllSheetOrders() {
     }
 }
 
-
 function showAlert(message) {
     document.getElementById('errorMessage').textContent = message;
     document.getElementById('errorModal').style.display = 'flex';
@@ -865,6 +922,10 @@ function showAboutModal() { document.getElementById('aboutModal').style.display 
 function closeAboutModal() { document.getElementById('aboutModal').style.display = 'none'; }
 function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
 function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+
+function printResults() {
+    window.print();
+}
 
 // --- DATA MANAGEMENT & LOCAL STORAGE ---
 function saveDataToLocalStorage() {
@@ -1445,17 +1506,29 @@ function createPlanCard(plan) {
         `<li><strong>${s.countInPattern} عدد</strong> ورق ${s.length}×${s.width} (کد: ${s.companyCode}, برش ${s.orientation})</li>`
     ).join('');
 
+    const summaryHtml = pattern.sheets.map(s => {
+        const totalSheetCount = cutsPossible * s.countInPattern;
+        return `<li>
+                    <strong>ورق ${s.length}×${s.width} (کد: ${s.companyCode}):</strong>
+                    <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${totalSheetCount}</span> عدد
+                </li>`;
+    }).join('');
+
     card.innerHTML = `
         <h4 style="display: flex; justify-content: space-between; align-items: center;">
             <span>طرح برش از کویل ${coil.companyCode} (عرض: ${coil.width} م.م)</span>
             <span style="color: ${wastePercentage > 10 ? '#dc3545' : '#28a745'}; font-weight: bold;">ضایعات: ${wastePercentage.toFixed(2)}%</span>
         </h4>
-        <p><strong>الگوی ترکیبی پیشنهادی:</strong></p>
-        <ul style="padding-right: 20px;">${sheetListHtml}</ul>
+        <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
+        <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
         <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
+        <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
         <hr>
-        <div style="font-size: 1.1em; font-weight: bold; text-align: center; color: #333;">
-            تعداد تکرار ممکن از این الگو: <span style="color: #667eea; font-size: 1.2em;">${cutsPossible}</span>
+        <div style="font-size: 1.1em; color: #333;">
+            <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
+            <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">
+                ${summaryHtml}
+            </ul>
         </div>`;
     
     return card;
