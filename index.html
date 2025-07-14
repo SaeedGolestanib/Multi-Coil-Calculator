@@ -1028,6 +1028,13 @@ function processImportedCoils(data, replace) {
             return;
         }
 
+        // NEW VALIDATION: Check for coil thickness limit in import
+        if (newCoil.thickness > 5) {
+            skippedCount++;
+            skippedReasons.push(`ردیف ${index + 2}: ضخامت کویل (${newCoil.thickness}) بیشتر از حد مجاز (5) است.`);
+            return;
+        }
+
         if (!Object.keys(settings.densities).includes(newCoil.type) || !settings.features.includes(newCoil.feature)) {
             skippedCount++;
             skippedReasons.push(`ردیف ${index + 2}: نوع یا ویژگی ورق در تنظیمات برنامه تعریف نشده است.`);
@@ -1037,6 +1044,12 @@ function processImportedCoils(data, replace) {
         if (coils.some(c => c.companyCode === newCoil.companyCode)) {
             skippedCount++;
             skippedReasons.push(`ردیف ${index + 2} (${newCoil.companyCode}): کد انبار تکراری است.`);
+            return;
+        }
+
+        if (coils.some(c => c.type === newCoil.type && c.feature === newCoil.feature && c.width === newCoil.width && c.thickness === newCoil.thickness)) {
+            skippedCount++;
+            skippedReasons.push(`ردیف ${index + 2}: کویلی با مشخصات یکسان (نوع، ویژگی، عرض، ضخامت) قبلاً ثبت شده است.`);
             return;
         }
 
@@ -1075,6 +1088,13 @@ function processImportedSheets(data, replace) {
             return;
         }
         
+        // NEW VALIDATION: Check if sheet width exceeds sheet length in import
+        if (newSheet.width > newSheet.length) {
+            skippedCount++;
+            skippedReasons.push(`ردیف ${index + 2}: عرض قطعه (${newSheet.width}) بیشتر از طول (${newSheet.length}) است.`);
+            return;
+        }
+        
         if (!Object.keys(settings.densities).includes(newSheet.type) || !settings.features.includes(newSheet.feature)) {
             skippedCount++;
             skippedReasons.push(`ردیف ${index + 2}: نوع یا ویژگی ورق در تنظیمات برنامه تعریف نشده است.`);
@@ -1084,6 +1104,12 @@ function processImportedSheets(data, replace) {
         if (sheetOrders.some(s => s.companyCode === newSheet.companyCode)) {
             skippedCount++;
             skippedReasons.push(`ردیف ${index + 2} (${newSheet.companyCode}): کد انبار تکراری است.`);
+            return;
+        }
+
+        if (sheetOrders.some(s => s.type === newSheet.type && s.feature === newSheet.feature && s.thickness === newSheet.thickness && s.length === newSheet.length && s.width === newSheet.width)) {
+            skippedCount++;
+            skippedReasons.push(`ردیف ${index + 2}: ابعاد برشی با مشخصات یکسان (نوع، ویژگی، ضخامت، طول، عرض) قبلاً ثبت شده است.`);
             return;
         }
 
@@ -1111,7 +1137,29 @@ function saveCoil() {
 
     if (!companyCode) { showAlert('لطفاً کد انبار را برای کویل وارد کنید.'); return; }
     if (!weight || !width || !thickness || !density || weight <= 0 || width <= 0 || thickness <= 0 || density <= 0) { showAlert('لطفاً تمام مشخصات کویل را با مقادیر مثبت وارد کنید.'); return; }
-    if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) { showAlert('کد انبار وارد شده برای کویل دیگری وجود دارد.'); return; }
+    
+    // NEW VALIDATION: Check for coil thickness limit
+    if (thickness > 5) {
+        showAlert('ضخامت کویل نباید بیشتر از 5 میلی‌متر باشد.');
+        return;
+    }
+
+    if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) { 
+        showAlert('کد انبار وارد شده برای کویل دیگری وجود دارد.'); 
+        return; 
+    }
+    
+    const isDuplicateData = coils.some(
+        c => c.id !== editingCoilId &&
+             c.type === type &&
+             c.feature === feature &&
+             c.width === width &&
+             c.thickness === thickness
+    );
+    if (isDuplicateData) {
+        showAlert('کویلی با مشخصات (نوع، ویژگی، عرض و ضخامت) یکسان قبلاً ثبت شده است.');
+        return;
+    }
     
     if (editingCoilId) {
         const index = coils.findIndex(c => c.id === editingCoilId);
@@ -1213,7 +1261,30 @@ function saveSheetOrder() {
     if (isNaN(thickness)) { showAlert('لطفاً یک ضخامت معتبر انتخاب کنید.'); return; }
     if (!feature) { showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.'); return; }
     if (!length || !width || length <= 0 || width <= 0) { showAlert('لطفاً طول و عرض را با مقادیر مثبت وارد کنید.'); return; }
-    if (sheetOrders.some(s => s.id !== editingSheetId && s.companyCode === companyCode)) { showAlert('کد انبار وارد شده برای ورق دیگری وجود دارد.'); return; }
+    
+    // NEW VALIDATION: Check if sheet width exceeds sheet length
+    if (width > length) {
+        showAlert('عرض قطعه نمی‌تواند بیشتر از طول آن باشد.');
+        return;
+    }
+
+    if (sheetOrders.some(s => s.id !== editingSheetId && s.companyCode === companyCode)) { 
+        showAlert('کد انبار وارد شده برای ورق دیگری وجود دارد.'); 
+        return; 
+    }
+
+    const isDuplicateData = sheetOrders.some(
+        s => s.id !== editingSheetId &&
+             s.type === type &&
+             s.feature === feature &&
+             s.thickness === thickness &&
+             s.length === length &&
+             s.width === width
+    );
+    if (isDuplicateData) {
+        showAlert('ابعاد برشی با مشخصات (نوع، ویژگی، ضخامت، طول و عرض) یکسان قبلاً ثبت شده است.');
+        return;
+    }
     
     if (editingSheetId) {
         const index = sheetOrders.findIndex(s => s.id === editingSheetId);
