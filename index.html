@@ -48,6 +48,18 @@
         .logo-image:hover {
             transform: scale(1.1);
         }
+        .aabsal-logo-image {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            width: 100px;
+            height: auto;
+            z-index: 1;
+            transition: transform 0.2s;
+        }
+        .aabsal-logo-image:hover {
+            transform: scale(1.1);
+        }
         h1 {
             text-align: center;
             color: #333;
@@ -79,7 +91,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap; /* برای واکنشگرایی بهتر */
+            flex-wrap: wrap; 
             gap: 15px;
             border-bottom: 2px solid #667eea;
             margin-bottom: 20px;
@@ -88,16 +100,24 @@
         .section-header h2, .settings-section h3 {
             border-bottom: none;
             margin-bottom: 0;
+            margin-left: auto; /* هدر را به سمت راست هل می‌دهد */
         }
         .section-header .io-buttons {
             display: flex;
             gap: 10px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .io-buttons .btn {
             font-size: 12px;
             padding: 6px 12px;
             border-radius: 15px;
+        }
+        /* استایل اختصاصی برای دکمه‌های اصلی که به هدر منتقل شده‌اند */
+        .io-buttons .btn-main-action {
+            font-size: 16px;
+            padding: 10px 20px;
+            border-radius: 25px;
         }
         h2 {
             color: #495057;
@@ -129,10 +149,18 @@
             display: flex;
             flex-direction: column; 
         }
-        label { 
+        .input-item label { 
             margin-bottom: 8px;
             font-weight: 700;
             color: #495057; 
+        }
+        .input-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #667eea;
+            align-self: flex-start;
+            margin-top: 5px;
         }
         input, select {
             padding: 10px;
@@ -223,10 +251,7 @@
             color: white;
             font-weight: 700; 
         }
-        td { 
-            background: white; 
-        }
-        tr:hover { 
+        tr:hover td { 
             background-color: #f1f3f5; 
         }
         .operations-cell, .settings-item { 
@@ -309,7 +334,10 @@
 </head>
 <body>
     <div class="container" id="mainContainer">
+        <!-- لوگوها -->
         <img src="images/Saeed4.png" alt="درباره برنامه" title="درباره برنامه" class="logo-image" onclick="showAboutModal()">
+        <img src="images/Aabsal logo.png" alt="لوگوی آبسال" title="لوگوی آبسال" class="aabsal-logo-image" id="aabsalLogo">
+        
         <h1>سیستم کاوش طرح‌های برش</h1>
         
         <div id="errorModal" class="modal"><div class="modal-content"><span class="close-btn" onclick="closeModal()">×</span><p id="errorMessage"></p><button class="btn btn-primary" onclick="closeModal()">بستن</button></div></div>
@@ -319,24 +347,19 @@
 		<div class="modal-content" style="max-width: 700px; text-align: right;">
 			<span class="close-btn" onclick="closeHelpModal()">×</span>
 			<h2>راهنمای استفاده از برنامه</h2>
-			
 			<h4>مقدمه</h4>
 			<p>این برنامه به شما کمک می‌کند تا بهترین طرح‌های ممکن برای برش ورق از کویل‌های موجود را پیدا کرده و ضایعات (پرتی) را به حداقل برسانید.</p>
-			
 			<hr>
-			
 			<h4>مرحله ۱: ورود کویل‌ها</h4>
 			<ul>
 				<li><strong>نوع ورق، ویژگی، عرض و ضخامت:</strong> مشخصات فیزیکی کویل خود را وارد کنید. این مشخصات برای تطبیق با سفارش‌ها استفاده می‌شوند.</li>
 				<li><strong>وزن و دانسیته:</strong> این دو مقدار برای محاسبه طول کل کویل به کار می‌روند. طول بیشتر به معنای تعداد برش بیشتر است.</li>
 			</ul>
-
 			<h4>مرحله ۲: ورود ابعاد برش</h4>
 			<ul>
 				<li>در این بخش، ابعاد ورق‌هایی که می‌خواهید برش دهید را وارد کنید.</li>
 				<li>توجه کنید که لیست‌های کشویی **"ضخامت"** و **"ویژگی"** فقط مقادیری را نمایش می‌دهند که برای آن‌ها کویل موجود در انبار (مرحله ۱) ثبت شده باشد.</li>
 			</ul>
-
 			<h4>نمایش نتایج</h4>
 			<p>پس از کلیک روی دکمه "نمایش طرح‌های ممکن"، برنامه تمام ترکیب‌های ممکن را بر اساس شرایط زیر نمایش می‌دهد:</p>
 			<ul>
@@ -344,14 +367,11 @@
 				<li>مجموع عرض ورق‌های سفارش نباید از عرض کویل بیشتر باشد.</li>
 				<li>درصد ضایعات طرح باید کمتر از مقدار تعیین شده توسط شما باشد.</li>
 			</ul>
-
 			<hr>
-
 			<h4>ورود و خروج با Excel</h4>
 			<p>برای ورود اطلاعات از فایل اکسل، فایل شما باید دقیقاً شامل ستون‌های زیر (با همین نام) باشد:</p>
 			<p><strong>برای کویل‌ها:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code>, <code>دانسیته</code></p>
 			<p><strong>برای ابعاد برش:</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
-			
 			<div style="text-align: center; margin-top: 25px;">
 				<button class="btn btn-primary" onclick="closeHelpModal()">متوجه شدم</button>
 			</div>
@@ -388,7 +408,8 @@ let settings = {
         'آلودیپ': 7.82 
     },
     features: ["معمولی", "کششی", "EK2", "EK4", "روکش دار"],
-    expireDate: '2025-12-31'
+    expireDate: '2025-12-31',
+    showAabsalLogo: true 
 };
 
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v21';
@@ -400,6 +421,7 @@ document.addEventListener('DOMContentLoaded', initializeApp);
 
 function initializeApp() {
     loadSettings();
+    updateLogoVisibility(); 
     if (checkExpiration()) return;
     loadDataFromLocalStorage();
     buildPageHTML();
@@ -420,7 +442,10 @@ function loadSettings() {
 }
 
 function saveSettings() {
+    // تغییرات فقط در صورت باز بودن بخش پیشرفته ذخیره می‌شوند
     if (document.getElementById('advanced-settings-fields').style.display === 'block') {
+        settings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
+        
         const newUsername = document.getElementById('setting-username').value.trim();
         const newPassword = document.getElementById('setting-password').value.trim();
         const newSuperPassword = document.getElementById('setting-super-password').value.trim();
@@ -434,6 +459,7 @@ function saveSettings() {
 
     localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
     
+    updateLogoVisibility(); 
     populateFormDropdowns();
     updateDensity();
     
@@ -474,6 +500,7 @@ function showAdvancedSettings() {
 }
 
 function populateSettingsForm() {
+    document.getElementById('setting-show-aabsal-logo').checked = settings.showAabsalLogo;
     document.getElementById('setting-username').value = settings.username;
     document.getElementById('setting-password').value = '';
     document.getElementById('setting-super-password').value = '';
@@ -482,7 +509,6 @@ function populateSettingsForm() {
     renderSettingTypes();
     renderSettingFeatures();
 }
-
 
 // --- HTML & PAGE BUILDING ---
 function buildPageHTML() {
@@ -510,14 +536,11 @@ function buildPageHTML() {
                 <div class="io-buttons">
                     <button class="btn btn-primary" onclick="importFromXLSX('coils')">ورود از Excel</button>
                     <button class="btn btn-success" onclick="exportToXLSX('coils')">خروجی به Excel</button>
-                    <button class="btn btn-danger" onclick="clearAllCoils()">پاک کردن همه کویل‌ها</button>
+                    <button class="btn btn-danger" onclick="clearAllCoils()">پاک کردن همه</button>
+                    <button class="btn btn-success btn-main-action" onclick="showSheetPage()">مرحله بعد: افزودن ابعاد برش ←</button>
                 </div>
             </div>
             <div class="table-container" id="coilList"></div>
-        </div>
-        <div class="nav-buttons">
-            <span></span>
-            <button class="btn btn-success" onclick="showSheetPage()">مرحله بعد: افزودن ابعاد برش ←</button>
         </div>`;
 
     // Page 2: Sheets
@@ -543,7 +566,8 @@ function buildPageHTML() {
                 <div class="io-buttons">
                     <button class="btn btn-primary" onclick="importFromXLSX('sheets')">ورود از Excel</button>
                     <button class="btn btn-success" onclick="exportToXLSX('sheets')">خروجی به Excel</button>
-                    <button class="btn btn-danger" onclick="clearAllSheetOrders()">پاک کردن همه ابعاد</button>
+                    <button class="btn btn-danger" onclick="clearAllSheetOrders()">پاک کردن همه</button>
+                    <button class="btn btn-success btn-main-action" onclick="runOptimization()">نمایش طرح‌های ممکن</button>
                 </div>
             </div>
             <div class="table-container" id="sheetOrderList"></div>
@@ -554,7 +578,6 @@ function buildPageHTML() {
                 <label for="maxWaste">حداکثر ضایعات مجاز (%):</label>
                 <input type="number" id="maxWaste" min="0" max="100" value="10" placeholder="0-100">
             </div>
-            <button class="btn btn-success" onclick="runOptimization()">نمایش طرح‌های ممکن</button>
         </div>`;
     
     // Page 3: Results
@@ -590,6 +613,10 @@ function buildPageHTML() {
                     <div class="input-item"><label for="setting-password">رمز عبور کاربر:</label><input type="password" id="setting-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
                     <div class="input-item"><label for="setting-super-password">رمز عبور پیشرفته:</label><input type="password" id="setting-super-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
                     <div class="input-item"><label for="setting-expire-date">تاریخ انقضا:</label><input type="date" id="setting-expire-date"></div>
+                    <div class="input-item">
+                        <label for="setting-show-aabsal-logo">نمایش لوگوی آبسال</label>
+                        <input type="checkbox" id="setting-show-aabsal-logo">
+                    </div>
                 </div>
             </div>
             
@@ -717,6 +744,13 @@ function isFeatureInUse(featureName) {
 }
 
 // --- UI & NAVIGATION ---
+function updateLogoVisibility() {
+    const logo = document.getElementById('aabsalLogo');
+    if (logo) {
+        logo.style.display = settings.showAabsalLogo ? 'block' : 'none';
+    }
+}
+
 function showPage(pageId) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById(pageId).classList.add('active');
@@ -955,8 +989,6 @@ function processImportedSheets(data, replace) {
 }
 
 // --- CRUD & RENDER FUNCTIONS ---
-
-// Coils
 function saveCoil() {
     const type = document.getElementById('coilType').value;
     const companyCode = document.getElementById('coilCompanyCode').value.trim();
