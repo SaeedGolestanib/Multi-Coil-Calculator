@@ -16,8 +16,8 @@
             font-style: normal;
             font-display: swap;
         }
-        * { 
-            box-sizing: border-box; 
+        * {
+            box-sizing: border-box;
         }
         body {
             font-family: 'Vazirmatn', sans-serif;
@@ -74,11 +74,11 @@
             position: relative;
             z-index: 1;
         }
-        .page { 
-            display: none; 
+        .page {
+            display: none;
         }
-        .page.active { 
-            display: block; 
+        .page.active {
+            display: block;
         }
         .form-section, .list-section, .results-section, .settings-section {
             background: #f8f9fa;
@@ -93,7 +93,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap; 
+            flex-wrap: wrap;
             gap: 15px;
             border-bottom: 2px solid #667eea;
             margin-bottom: 20px;
@@ -136,19 +136,19 @@
              border-bottom: 2px solid #e9ecef;
              padding-bottom: 10px;
         }
-        .input-grid { 
+        .input-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px; 
+            gap: 20px;
         }
-        .settings-grid { 
+        .settings-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px; 
+            gap: 20px;
         }
-        .input-item { 
+        .input-item {
             display: flex;
-            flex-direction: column; 
+            flex-direction: column;
         }
         .company-code-input {
             display: flex;
@@ -180,11 +180,10 @@
         .company-code-suffix:focus {
             outline: none;
         }
-
-        .input-item label { 
+        .input-item label {
             margin-bottom: 8px;
             font-weight: 700;
-            color: #495057; 
+            color: #495057;
         }
         .input-item input[type="checkbox"] {
             width: 20px;
@@ -203,13 +202,13 @@
             transition: border-color 0.3s;
             background-color: white;
         }
-        input[readonly] { 
+        input[readonly] {
             background-color: #e9ecef;
-            cursor: not-allowed; 
+            cursor: not-allowed;
         }
-        input:focus, select:focus { 
+        input:focus, select:focus {
             outline: none;
-            border-color: #667eea; 
+            border-color: #667eea;
         }
         .btn {
             font-family: 'Vazirmatn', sans-serif;
@@ -223,81 +222,72 @@
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.3s;
             text-align: center;
         }
-        .btn:hover { 
+        .btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 15px rgba(0,0,0,0.15); 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
         }
-        .btn-primary { 
-            background: linear-gradient(45deg, #667eea, #764ba2); 
-        }
-        .btn-success { 
-            background: linear-gradient(45deg, #28a745, #20c997); 
-        }
-        .btn-secondary { 
-            background: #6c757d; 
-        }
-        .btn-warning { 
-            background: #ffc107; color: #212529;
-        }
-        .btn-danger { 
-            background: #dc3545; 
-        }
-        .form-buttons-container { 
+        .btn-primary { background: linear-gradient(45deg, #667eea, #764ba2); }
+        .btn-success { background: linear-gradient(45deg, #28a745, #20c997); }
+        .btn-secondary { background: #6c757d; }
+        .btn-warning { background: #ffc107; color: #212529; }
+        .btn-danger { background: #dc3545; }
+
+        .form-buttons-container {
             display: flex;
             justify-content: center;
             gap: 15px;
-            margin-top: 20px; 
+            margin-top: 20px;
         }
-        .form-buttons-container .btn { 
+        .form-buttons-container .btn {
             width: auto;
             max-width: 220px;
             margin: 0;
-            flex-grow: 1; 
+            flex-grow: 1;
         }
-        .nav-buttons { 
+        .nav-buttons {
             display: flex;
             justify-content: space-around;
             align-items: center;
             margin-top: 20px;
             flex-wrap: wrap;
-            gap: 15px; 
+            gap: 15px;
         }
-        .table-container { 
+        .table-container {
             margin-top: 20px;
-            overflow-x: auto; 
+            overflow-x: auto;
         }
-        table { 
+        table {
             width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.08); 
+            box-shadow: 0 4px 8px rgba(0,0,0,0.08);
         }
-        th, td { 
+        th, td {
             padding: 12px;
             text-align: right;
-            border-bottom: 1px solid #e9ecef; 
+            border-bottom: 1px solid #e9ecef;
         }
-        th { 
+        th {
             background: #667eea;
             color: white;
-            font-weight: 700; 
+            font-weight: 700;
         }
-        tr:hover td { 
-            background-color: #f1f3f5; 
+        tr:hover td {
+            background-color: #f1f3f5;
         }
-        .operations-cell, .settings-item { 
+        .operations-cell, .settings-item {
             display: flex;
             gap: 8px;
-            align-items: center; 
+            align-items: center;
         }
-        .operations-cell .btn, .settings-item .btn { 
+        .operations-cell .btn, .settings-item .btn {
             padding: 5px 10px;
             font-size: 12px;
             border-radius: 5px;
-            margin: 0; 
+            margin: 0;
         }
-        .modal { 
+        .modal {
             display: none;
             position: fixed;
             top: 0; left: 0;
@@ -306,121 +296,164 @@
             background-color: rgba(0,0,0,0.5);
             z-index: 1000;
             justify-content: center;
-            align-items: center; 
+            align-items: center;
         }
-        .modal-content { 
+        .modal-content {
             background-color: white;
             padding: 30px;
             border-radius: 10px;
             max-width: 500px;
             width: 90%;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            position: relative; 
+            position: relative;
         }
-        .modal-content h2 { 
+        .modal-content h2 {
             text-align: center;
-            margin-top: 0; 
+            margin-top: 0;
         }
-        #errorModal .modal-content p { 
+        #errorModal .modal-content p {
             color: #721c24;
             margin: 0 0 20px;
             font-size: 1.1em;
-            text-align: center; 
+            text-align: center;
         }
-        #aboutModal .modal-content p { 
+        #aboutModal .modal-content p {
             color: #333;
             margin: 10px 0;
             font-size: 1.1em;
-            text-align: right; 
+            text-align: right;
         }
-        #aboutModal .modal-content p strong { 
-            color: #667eea; 
+        #aboutModal .modal-content p strong {
+            color: #667eea;
         }
-        .close-btn { 
+        .close-btn {
             position: absolute;
             top: 15px;
             left: 15px;
             font-size: 1.4em;
             cursor: pointer;
-            color: #aaa; 
+            color: #aaa;
         }
-        .app-footer { 
+        .app-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-top: 30px;
             border-top: 1px solid #e9ecef;
-            padding-top: 15px; 
+            padding-top: 15px;
         }
-        .app-footer .btn { 
+        .app-footer .btn {
             font-size: 14px;
-            padding: 8px 15px; 
+            padding: 8px 15px;
         }
-        .settings-item { 
+        .settings-item {
             justify-content: space-between;
             padding: 10px;
             background-color: #fff;
             border: 1px solid #e0e0e0;
             border-radius: 5px;
-            margin-bottom: 8px; 
+            margin-bottom: 8px;
         }
-        
         .pdf-only-title {
             display: none;
         }
 
+        /* === STYLING ENHANCEMENTS for Results Page (NEW) === */
+        .result-group {
+            /* Adds a strong top border to visually separate material groups */
+            border-top: 3px solid #764ba2;
+            padding-top: 20px;
+            margin-top: 30px;
+        }
+        .result-group:first-child {
+            /* Removes the top border from the very first group */
+            border-top: none;
+            margin-top: 0;
+            padding-top: 0;
+        }
+        .result-card {
+            /* Main card style with a darker, more prominent border */
+            background: #ffffff;
+            border: 2px solid #aab0b6; /* Darker and more visible border */
+            border-radius: 10px; /* Slightly larger radius */
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* A bit stronger shadow */
+            overflow: hidden; /* Important for containing the styled header */
+        }
+        .result-card h4 {
+            /* Styles the header of each card for better visual hierarchy */
+            background-color: #f1f3f5; /* Light gray background */
+            padding: 12px 15px;
+            margin: 0 0 15px 0; /* Remove negative margins, place at the top */
+            border-bottom: 2px solid #dee2e6; /* Clear separator line */
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .result-card .card-content {
+            /* A container for the card's body text for proper padding */
+            padding: 0 15px 15px 15px;
+        }
+        /* ====================================================== */
+
+
         @media print {
-            body { 
-                background: none !important; 
-                padding: 0; 
-                margin: 0; 
+            body {
+                background: none !important;
+                padding: 0;
+                margin: 0;
                 overflow: visible !important;
             }
-            .container { 
-                box-shadow: none !important; 
-                border: none; 
-                max-width: 100% !important; /* Critical for print layout */
+            .container {
+                box-shadow: none !important;
+                border: none;
+                max-width: 100% !important;
                 padding: 10px;
                 overflow: visible !important;
             }
-            .nav-buttons, .app-footer, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action { 
-                display: none !important; 
+            .nav-buttons, .app-footer, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action {
+                display: none !important;
             }
-            .logo-image, .aabsal-logo-image { 
-                position: absolute; 
-                display: block; 
+            .logo-image, .aabsal-logo-image {
+                position: absolute;
+                display: block;
             }
             .pdf-only-title {
                 display: block !important;
                 text-align: center;
                 margin-bottom: 20px;
             }
-            .page { 
-                display: none !important; 
+            .page { display: none !important; }
+            .page.active { display: block !important; }
+
+            h1, h2, h3, h4, p, li, span, strong, td, th {
+                color: black !important;
+                background: none !important;
+                -webkit-text-fill-color: initial !important;
             }
-            .page.active { 
-                display: block !important; 
+            table {
+                box-shadow: none;
+                border: 1px solid #ccc;
             }
-            h1, h2, h3, h4, p, li, span, strong, td, th { 
-                color: black !important; 
-                background: none !important; 
-                -webkit-text-fill-color: initial !important; 
+            th {
+                background-color: #f2f2f2 !important;
             }
-            table { 
-                box-shadow: none; 
-                border: 1px solid #ccc; 
+            /* === ENHANCED PRINT STYLES (MODIFIED) === */
+            .result-group {
+                page-break-before: auto;
             }
-            th { 
-                background-color: #f2f2f2 !important; 
+            .result-card {
+                box-shadow: none !important;
+                border: 2px solid #000 !important; /* Black, thick border for crisp printing */
+                page-break-inside: avoid;
+                margin-top: 15px;
             }
-            .result-card, .list-section, .form-section { 
-                box-shadow: none !important; 
-                border: 1px solid #ddd !important; 
-                page-break-inside: avoid; 
-                margin-top: 15px; 
+            .result-card h4 {
+                background-color: #e8e8e8 !important; /* Light gray background for print */
+                border-bottom: 1px solid #333 !important; /* Clear line */
             }
-            a[href]:after { 
-                content: none !important; 
+            a[href]:after {
+                content: none !important;
             }
         }
     </style>
@@ -502,6 +535,8 @@
 //    by temporarily adjusting container styles before printing and restoring
 //    them afterwards. This prevents horizontal content truncation.
 // 2. Maintained the existing fix for PDF export, ensuring both features work correctly.
+// 3. ENHANCED VISUALS: Updated createPlanCard to work with new CSS classes for
+//    clearer, more prominent result cards.
 // =================================================================================
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
@@ -2190,10 +2225,15 @@ function calculateCoilLength(coil) {
     return lengthMm;
 }
 
+/**
+ * Creates an HTML element for a single result plan with enhanced styling.
+ * @param {object} plan - The plan object containing coil, pattern, etc.
+ * @returns {HTMLElement} The card element.
+ */
 function createPlanCard(plan) {
     const card = document.createElement('div');
+    // This class is now styled in the main CSS block for better visibility.
     card.className = 'result-card';
-    card.style.cssText = "background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
     
     const { coil, pattern, wastePercentage, cutsPossible } = plan;
     
@@ -2210,23 +2250,27 @@ function createPlanCard(plan) {
         ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>`
         : coil.companyCode;
         
+    // The h4 tag is now styled by the .result-card h4 rule in CSS.
     card.innerHTML = `
-        <h4 style="display: flex; justify-content: space-between; align-items: center;">
+        <h4>
             <span>طرح برش از کویل ${displayCode} (عرض: ${coil.width} م.م)</span>
             <span style="color: ${wastePercentage > 10 ? '#dc3545' : '#28a745'}; font-weight: bold;">ضایعات: ${wastePercentage.toFixed(2)}%</span>
         </h4>
-        <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
-        <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
-        <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
-        <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
-        <hr>
-        <div style="font-size: 1.1em; color: #333;">
-            <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
-            <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">${summaryHtml}</ul>
+        <div class="card-content">
+            <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
+            <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
+            <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
+            <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
+            <hr>
+            <div style="font-size: 1.1em; color: #333;">
+                <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
+                <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">${summaryHtml}</ul>
+            </div>
         </div>
     `;
     return card;
 }
+
 
 </script>
 </body>
