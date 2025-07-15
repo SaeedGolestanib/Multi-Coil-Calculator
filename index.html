@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سیستم کاوش طرح‌های برش</title>
-    <!-- افزودن کتابخانه SheetJS برای کار با فایل‌های اکسل -->
+    <!-- کتابخانه SheetJS برای کار با فایل‌های اکسل -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- کتابخانه html2pdf.js برای ساخت خروجی PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         @font-face {
             font-family: 'Vazirmatn';
@@ -363,18 +365,63 @@
             margin-bottom: 8px; 
         }
         
+        .pdf-only-title {
+            display: none;
+        }
+
         @media print {
-            body { background: none !important; padding: 0; margin: 0; }
-            .container { box-shadow: none !important; border: none; max-width: 100%; padding: 10px; }
-            .nav-buttons, .app-footer, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action { display: none !important; }
-            .logo-image, .aabsal-logo-image { position: absolute; display: block; }
-            .page { display: none !important; }
-            .page.active { display: block !important; }
-            h1, h2, h3, h4, p, li, span, strong, td, th { color: black !important; background: none !important; -webkit-text-fill-color: initial !important; }
-            table { box-shadow: none; border: 1px solid #ccc; }
-            th { background-color: #f2f2f2 !important; }
-            .result-card, .list-section, .form-section { box-shadow: none !important; border: 1px solid #ddd !important; page-break-inside: avoid; margin-top: 15px; }
-            a[href]:after { content: none !important; }
+            body { 
+                background: none !important; 
+                padding: 0; 
+                margin: 0; 
+                overflow: visible !important;
+            }
+            .container { 
+                box-shadow: none !important; 
+                border: none; 
+                max-width: 100%; 
+                padding: 10px;
+                overflow: visible !important;
+            }
+            .nav-buttons, .app-footer, .operations-cell, .io-buttons, .form-buttons-container, .modal, .close-btn, .section-header .btn-main-action { 
+                display: none !important; 
+            }
+            .logo-image, .aabsal-logo-image { 
+                position: absolute; 
+                display: block; 
+            }
+            .pdf-only-title {
+                display: block !important;
+                text-align: center;
+                margin-bottom: 20px;
+            }
+            .page { 
+                display: none !important; 
+            }
+            .page.active { 
+                display: block !important; 
+            }
+            h1, h2, h3, h4, p, li, span, strong, td, th { 
+                color: black !important; 
+                background: none !important; 
+                -webkit-text-fill-color: initial !important; 
+            }
+            table { 
+                box-shadow: none; 
+                border: 1px solid #ccc; 
+            }
+            th { 
+                background-color: #f2f2f2 !important; 
+            }
+            .result-card, .list-section, .form-section { 
+                box-shadow: none !important; 
+                border: 1px solid #ddd !important; 
+                page-break-inside: avoid; 
+                margin-top: 15px; 
+            }
+            a[href]:after { 
+                content: none !important; 
+            }
         }
     </style>
 </head>
@@ -449,17 +496,15 @@
 
 <script>
 // =================================================================================
-// REFACTORED SCRIPT - V2.7.1
+// REFACTORED SCRIPT - V2.7.5
 // Changes:
-// 1. Swapped "Feature" and "Thickness" fields in the Sheet Order form.
-// 2. Updated dependency logic: Type -> Feature -> Thickness.
-// 3. Centralized all event listeners using `addEventListener`.
-// 4. Implemented Event Delegation for dynamically created buttons (edit/delete).
-// 5. Cleaned up code and added JSDoc comments for better readability.
+// 1. Implemented a robust fix for the incomplete PDF export by forcing the
+//    viewport to scroll to the top before PDF generation.
+// 2. Added a short timeout to ensure the DOM updates (scroll) before html2pdf runs.
 // =================================================================================
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '2.7.1'; // Updated version for refactoring
+const APP_VERSION = '2.7.5';
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -506,10 +551,12 @@ function initializeApp() {
     displayAppVersion();
     loadSettings();
     updateLogoVisibility(); 
-    if (checkExpiration()) return;
+    if (checkExpiration()) {
+        return;
+    }
     loadDataFromLocalStorage();
     buildPageHTML();
-    bindEventListeners(); // Centralized event listener binding
+    bindEventListeners();
     populateFormDropdowns();
     showCoilPage();
     renderCoilList();
@@ -534,9 +581,8 @@ function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
         const loadedSettings = JSON.parse(savedSettings);
-        // Use nullish coalescing operator for safer assignment
         settings = {
-            ...settings, // Keep defaults for any missing keys
+            ...settings,
             ...loadedSettings
         };
     }
@@ -551,7 +597,9 @@ function saveSettings() {
         potentialSettings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
         
         const newUsername = document.getElementById('setting-username').value.trim();
-        if (newUsername) potentialSettings.username = newUsername;
+        if (newUsername) {
+            potentialSettings.username = newUsername;
+        }
         
         const newPassword = document.getElementById('setting-password').value.trim();
         if (newPassword) {
@@ -654,8 +702,14 @@ function buildPageHTML() {
         <div class="form-section">
             <h2>مرحله ۱: افزودن و ویرایش کویل‌ها</h2>
             <div class="input-grid">
-                <div class="input-item"><label for="coilType">نوع ورق:</label><select id="coilType"></select></div>
-                <div class="input-item"><label for="coilFeature">ویژگی ورق:</label><select id="coilFeature"></select></div>
+                <div class="input-item">
+                    <label for="coilType">نوع ورق:</label>
+                    <select id="coilType"></select>
+                </div>
+                <div class="input-item">
+                    <label for="coilFeature">ویژگی ورق:</label>
+                    <select id="coilFeature"></select>
+                </div>
                 <div class="input-item">
                     <label for="coilCodeSuffix">کد انبار (۸ رقمی):</label>
                     <div class="company-code-input">
@@ -663,10 +717,22 @@ function buildPageHTML() {
                         <span id="coilCodePrefix" class="company-code-prefix">----</span>
                     </div>
                 </div>
-                <div class="input-item"><label for="coilWeight">وزن (ک.گ):</label><input type="number" id="coilWeight" placeholder="مثال: 5000"></div>
-                <div class="input-item"><label for="coilWidth">عرض (م.م):</label><input type="number" id="coilWidth" placeholder="مثال: 1250"></div>
-                <div class="input-item"><label for="coilThickness">ضخامت (م.م):</label><input type="number" id="coilThickness" step="0.01" placeholder="مثال: 0.5"></div>
-                <div class="input-item"><label for="coilDensity">دانسیته (g/cm³):</label><input type="number" id="coilDensity" step="0.01" readonly></div>
+                <div class="input-item">
+                    <label for="coilWeight">وزن (ک.گ):</label>
+                    <input type="number" id="coilWeight" placeholder="مثال: 5000">
+                </div>
+                <div class="input-item">
+                    <label for="coilWidth">عرض (م.م):</label>
+                    <input type="number" id="coilWidth" placeholder="مثال: 1250">
+                </div>
+                <div class="input-item">
+                    <label for="coilThickness">ضخامت (م.م):</label>
+                    <input type="number" id="coilThickness" step="0.01" placeholder="مثال: 0.5">
+                </div>
+                <div class="input-item">
+                    <label for="coilDensity">دانسیته (g/cm³):</label>
+                    <input type="number" id="coilDensity" step="0.01" readonly>
+                </div>
             </div>
             <div class="form-buttons-container">
                 <button id="coilSubmitBtn" class="btn btn-primary">افزودن کویل</button>
@@ -690,15 +756,30 @@ function buildPageHTML() {
         <div class="form-section">
             <h2>مرحله ۲: افزودن و ویرایش ابعاد برش</h2>
             <div class="input-grid">
-                <div class="input-item"><label for="sheetType">نوع ورق:</label><select id="sheetType"></select></div>
-                <div class="input-item"><label for="sheetFeature">ویژگی ورق:</label><select id="sheetFeature"></select></div>
-                <div class="input-item"><label for="sheetThickness">ضخامت (م.م):</label><select id="sheetThickness"></select></div>
+                <div class="input-item">
+                    <label for="sheetType">نوع ورق:</label>
+                    <select id="sheetType"></select>
+                </div>
+                <div class="input-item">
+                    <label for="sheetFeature">ویژگی ورق:</label>
+                    <select id="sheetFeature"></select>
+                </div>
+                <div class="input-item">
+                    <label for="sheetThickness">ضخامت (م.م):</label>
+                    <select id="sheetThickness"></select>
+                </div>
                 <div class="input-item">
                     <label for="sheetCompanyCode">کد انبار (۶ یا ۷ رقمی):</label>
                     <input type="text" id="sheetCompanyCode" placeholder="مثال: 1234567" maxlength="7">
                 </div>
-                <div class="input-item"><label for="sheetLength">طول ورق (م.م):</label><input type="number" id="sheetLength" placeholder="مثال: 2000"></div>
-                <div class="input-item"><label for="sheetWidth">عرض ورق (م.م):</label><input type="number" id="sheetWidth" placeholder="مثال: 1000"></div>
+                <div class="input-item">
+                    <label for="sheetLength">طول ورق (م.م):</label>
+                    <input type="number" id="sheetLength" placeholder="مثال: 2000">
+                </div>
+                <div class="input-item">
+                    <label for="sheetWidth">عرض ورق (م.م):</label>
+                    <input type="number" id="sheetWidth" placeholder="مثال: 1000">
+                </div>
             </div>
             <div class="form-buttons-container">
                 <button id="sheetSubmitBtn" class="btn btn-primary">افزودن ابعاد</button>
@@ -709,6 +790,7 @@ function buildPageHTML() {
             <div class="section-header">
                 <h2>لیست ابعاد برش</h2>
                 <div class="io-buttons">
+                    <button id="btnReturnToCoils" class="btn btn-secondary">→ بازگشت به کویل‌ها</button>
                     <button id="btnImportSheets" class="btn btn-primary">ورود از Excel</button>
                     <button id="btnExportSheets" class="btn btn-success">خروجی به Excel</button>
                     <button id="btnClearSheets" class="btn btn-danger">پاک کردن همه</button>
@@ -718,7 +800,6 @@ function buildPageHTML() {
             <div class="table-container" id="sheetOrderList"></div>
         </div>
         <div class="nav-buttons">
-            <button id="btnReturnToCoils" class="btn btn-secondary">→ بازگشت به ورود کویل‌ها</button>
             <div class="input-item" style="flex-grow: 1; max-width: 250px;">
                 <label for="maxWaste">حداکثر ضایعات مجاز (%):</label>
                 <input type="number" id="maxWaste" min="0" max="100" value="5" placeholder="0-100">
@@ -727,11 +808,13 @@ function buildPageHTML() {
     
     document.getElementById('page-results').innerHTML = `
         <div class="results-section">
-            <h2>نتایج: تمام طرح‌های برش ممکن</h2>
-            <div id="resultsContainer"></div>
+            <div id="resultsContainer">
+                <!-- Results will be injected here by JS -->
+            </div>
         </div>
         <div class="nav-buttons">
             <button id="btnStartOver" class="btn btn-danger">شروع مجدد</button>
+            <button id="btnExportToPDF" class="btn btn-success">خروجی PDF</button>
             <button id="btnPrintResults" class="btn btn-primary">چاپ نتایج</button>
             <button id="btnEditInputs" class="btn btn-warning">ویرایش ورودی‌ها</button>
         </div>`;
@@ -740,10 +823,18 @@ function buildPageHTML() {
         <div id="login-section">
             <h2>ورود به بخش تنظیمات</h2>
             <div class="settings-grid">
-                <div class="input-item"><label for="username">نام کاربری:</label><input type="text" id="username"></div>
-                <div class="input-item"><label for="password">رمز عبور:</label><input type="password" id="password"></div>
+                <div class="input-item">
+                    <label for="username">نام کاربری:</label>
+                    <input type="text" id="username">
+                </div>
+                <div class="input-item">
+                    <label for="password">رمز عبور:</label>
+                    <input type="password" id="password">
+                </div>
             </div>
-            <div class="form-buttons-container"><button id="btnLogin" class="btn btn-primary">ورود</button></div>
+            <div class="form-buttons-container">
+                <button id="btnLogin" class="btn btn-primary">ورود</button>
+            </div>
         </div>
         <div id="settings-section" class="settings-section" style="display: none;">
             <h2>تنظیمات برنامه</h2>
@@ -753,10 +844,22 @@ function buildPageHTML() {
             <div id="advanced-settings-fields" style="display: none; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                 <h3>تنظیمات پیشرفته (محرمانه)</h3>
                 <div class="settings-grid">
-                    <div class="input-item"><label for="setting-username">نام کاربری:</label><input type="text" id="setting-username"></div>
-                    <div class="input-item"><label for="setting-password">رمز عبور کاربر:</label><input type="password" id="setting-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
-                    <div class="input-item"><label for="setting-super-password">رمز عبور پیشرفته:</label><input type="password" id="setting-super-password" placeholder="برای عدم تغییر، خالی بگذارید"></div>
-                    <div class="input-item"><label for="setting-expire-date">تاریخ انقضا:</label><input type="date" id="setting-expire-date"></div>
+                    <div class="input-item">
+                        <label for="setting-username">نام کاربری:</label>
+                        <input type="text" id="setting-username">
+                    </div>
+                    <div class="input-item">
+                        <label for="setting-password">رمز عبور کاربر:</label>
+                        <input type="password" id="setting-password" placeholder="برای عدم تغییر، خالی بگذارید">
+                    </div>
+                    <div class="input-item">
+                        <label for="setting-super-password">رمز عبور پیشرفته:</label>
+                        <input type="password" id="setting-super-password" placeholder="برای عدم تغییر، خالی بگذارید">
+                    </div>
+                    <div class="input-item">
+                        <label for="setting-expire-date">تاریخ انقضا:</label>
+                        <input type="date" id="setting-expire-date">
+                    </div>
                     <div class="input-item">
                         <label for="setting-show-aabsal-logo">نمایش لوگوی آبسال</label>
                         <input type="checkbox" id="setting-show-aabsal-logo">
@@ -767,28 +870,54 @@ function buildPageHTML() {
             <h3>مدیریت انواع ورق</h3>
             <div id="settingTypesList"></div>
             <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;">
-                <div class="input-item"><label for="newTypeName">نام نوع جدید:</label><input type="text" id="newTypeName" placeholder="مثال: روغنی"></div>
-                <div class="input-item"><label for="newTypeDensity">دانسیته:</label><input type="number" step="0.01" id="newTypeDensity" placeholder="مثال: 7.85"></div>
-                <div class="input-item" style="justify-content: flex-end;"><button id="btnAddType" class="btn btn-primary">افزودن نوع</button></div>
+                <div class="input-item">
+                    <label for="newTypeName">نام نوع جدید:</label>
+                    <input type="text" id="newTypeName" placeholder="مثال: روغنی">
+                </div>
+                <div class="input-item">
+                    <label for="newTypeDensity">دانسیته:</label>
+                    <input type="number" step="0.01" id="newTypeDensity" placeholder="مثال: 7.85">
+                </div>
+                <div class="input-item" style="justify-content: flex-end;">
+                    <button id="btnAddType" class="btn btn-primary">افزودن نوع</button>
+                </div>
             </div>
 
             <h3>مدیریت ویژگی‌های ورق</h3>
             <div id="settingFeaturesList"></div>
-             <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;">
-                <div class="input-item"><label for="newFeatureName">نام ویژگی جدید:</label><input type="text" id="newFeatureName" placeholder="مثال: کششی"></div>
-                <div class="input-item" style="justify-content: flex-end;"><button id="btnAddFeature" class="btn btn-primary">افزودن ویژگی</button></div>
+            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                <div class="input-item">
+                    <label for="newFeatureName">نام ویژگی جدید:</label>
+                    <input type="text" id="newFeatureName" placeholder="مثال: کششی">
+                </div>
+                <div class="input-item" style="justify-content: flex-end;">
+                    <button id="btnAddFeature" class="btn btn-primary">افزودن ویژگی</button>
+                </div>
             </div>
 
             <h3>مدیریت پیش‌کدهای انبار</h3>
             <div id="settingPrefixesList"></div>
-             <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;">
-                <div class="input-item"><label for="newPrefixType">برای نوع ورق:</label><select id="newPrefixType"></select></div>
-                <div class="input-item"><label for="newPrefixFeature">برای ویژگی:</label><select id="newPrefixFeature"></select></div>
-                <div class="input-item"><label for="newPrefixCode">پیش‌کد (۴ رقم):</label><input type="text" id="newPrefixCode" placeholder="مثال: 0627" maxlength="4"></div>
-                <div class="input-item" style="justify-content: flex-end;"><button id="btnAddPrefix" class="btn btn-primary">افزودن قانون پیش‌کد</button></div>
+            <div class="input-grid" style="margin-top:15px; border-top: 1px solid #ddd; padding-top: 15px;">
+                <div class="input-item">
+                    <label for="newPrefixType">برای نوع ورق:</label>
+                    <select id="newPrefixType"></select>
+                </div>
+                <div class="input-item">
+                    <label for="newPrefixFeature">برای ویژگی:</label>
+                    <select id="newPrefixFeature"></select>
+                </div>
+                <div class="input-item">
+                    <label for="newPrefixCode">پیش‌کد (۴ رقم):</label>
+                    <input type="text" id="newPrefixCode" placeholder="مثال: 0627" maxlength="4">
+                </div>
+                <div class="input-item" style="justify-content: flex-end;">
+                    <button id="btnAddPrefix" class="btn btn-primary">افزودن قانون پیش‌کد</button>
+                </div>
             </div>
 
-            <div class="form-buttons-container"><button id="btnSaveSettings" class="btn btn-success">ذخیره همه تغییرات</button></div>
+            <div class="form-buttons-container">
+                <button id="btnSaveSettings" class="btn btn-success">ذخیره همه تغییرات</button>
+            </div>
         </div>
         <div class="nav-buttons">
             <button id="btnReturnToApp" class="btn btn-secondary">بازگشت به برنامه</button>
@@ -807,7 +936,9 @@ function populateFormDropdowns() {
     document.getElementById('sheetType').innerHTML = typeOptions;
 
     const prefixTypeSelect = document.getElementById('newPrefixType');
-    if (prefixTypeSelect) prefixTypeSelect.innerHTML = typeOptions;
+    if (prefixTypeSelect) {
+        prefixTypeSelect.innerHTML = typeOptions;
+    }
 
     const prefixFeatureSelect = document.getElementById('newPrefixFeature');
     if (prefixFeatureSelect) {
@@ -861,6 +992,7 @@ function bindEventListeners() {
     // Results Page
     document.getElementById('btnStartOver').addEventListener('click', startOver);
     document.getElementById('btnPrintResults').addEventListener('click', printResults);
+    document.getElementById('btnExportToPDF').addEventListener('click', exportResultsToPDF);
     document.getElementById('btnEditInputs').addEventListener('click', showSheetPage);
 
     // Settings Page
@@ -879,6 +1011,87 @@ function bindEventListeners() {
     document.getElementById('settingPrefixesList').addEventListener('click', handleSettingsListActions);
 }
 
+// --- PDF & PRINTING ---
+
+/**
+ * Prepares the results for printing by adding a title and then calling window.print().
+ */
+function printResults() {
+    const resultsContainer = document.getElementById('resultsContainer');
+    const printTitle = document.createElement('h2');
+    printTitle.textContent = 'نتایج طرح‌های برش';
+    printTitle.className = 'pdf-only-title';
+    resultsContainer.prepend(printTitle);
+    
+    window.print();
+    
+    window.addEventListener('afterprint', () => {
+        if (resultsContainer.contains(printTitle)) {
+            resultsContainer.removeChild(printTitle);
+        }
+    }, { once: true });
+}
+
+/**
+ * Exports the content of the results container to a PDF file, handling overflow and scroll issues.
+ */
+function exportResultsToPDF() {
+    const mainContainer = document.getElementById('mainContainer');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const body = document.body;
+
+    if (!resultsContainer.innerHTML.trim() || resultsContainer.textContent.includes('هیچ ابعاد برشی')) {
+        showAlert('محتوایی برای خروجی PDF وجود ندارد.');
+        return;
+    }
+    if (typeof html2pdf === 'undefined') {
+        showAlert('کتابخانه PDF بارگیری نشده است. لطفاً اتصال اینترنت خود را بررسی کرده و صفحه را رفرش کنید.');
+        return;
+    }
+
+    const originalContainerOverflow = mainContainer.style.overflow;
+    const originalBodyOverflow = body.style.overflow;
+
+    const restoreOriginalStyles = (titleElement) => {
+        mainContainer.style.overflow = originalContainerOverflow;
+        body.style.overflow = originalBodyOverflow;
+        if (resultsContainer.contains(titleElement)) {
+            resultsContainer.removeChild(titleElement);
+        }
+    };
+
+    const pdfTitle = document.createElement('h2');
+    pdfTitle.textContent = 'نتایج طرح‌های برش';
+    pdfTitle.style.textAlign = 'center';
+    pdfTitle.style.marginBottom = '20px';
+    resultsContainer.prepend(pdfTitle);
+
+    // ===== CRITICAL FIX: Scroll to top and temporarily remove overflow limits =====
+    window.scrollTo(0, 0);
+    mainContainer.style.overflow = 'visible';
+    body.style.overflow = 'visible';
+
+    const opt = {
+        margin:       [15, 10, 15, 10],
+        filename:     'نتایج_طرح_برش.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, logging: false, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    // Use a small timeout to ensure the browser has processed the scroll and style changes
+    setTimeout(() => {
+        html2pdf().from(resultsContainer).set(opt).save().then(() => {
+            restoreOriginalStyles(pdfTitle);
+        }).catch(err => {
+            restoreOriginalStyles(pdfTitle);
+            console.error("PDF generation failed:", err);
+            showAlert("خطا در هنگام ایجاد فایل PDF.");
+        });
+    }, 100);
+}
+
+
 // --- DYNAMIC SETTINGS MANAGEMENT ---
 function renderSettingTypes() {
     const container = document.getElementById('settingTypesList');
@@ -886,7 +1099,10 @@ function renderSettingTypes() {
     Object.entries(settings.densities).forEach(([name, density]) => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'settings-item';
-        itemDiv.innerHTML = `<span>${name} (دانسیته: ${density})</span><button class="btn btn-danger" data-action="delete-type" data-key="${name}">حذف</button>`;
+        itemDiv.innerHTML = `
+            <span>${name} (دانسیته: ${density})</span>
+            <button class="btn btn-danger" data-action="delete-type" data-key="${name}">حذف</button>
+        `;
         container.appendChild(itemDiv);
     });
 }
@@ -897,8 +1113,14 @@ function addSettingType() {
     const name = nameInput.value.trim();
     const density = parseFloat(densityInput.value);
 
-    if (!name || isNaN(density)) { showAlert('لطفاً نام و دانسیته معتبر وارد کنید.'); return; }
-    if (settings.densities[name]) { alert('این نوع ورق از قبل وجود دارد.'); return; }
+    if (!name || isNaN(density)) {
+        showAlert('لطفاً نام و دانسیته معتبر وارد کنید.');
+        return;
+    }
+    if (settings.densities[name]) {
+        alert('این نوع ورق از قبل وجود دارد.');
+        return;
+    }
     settings.densities[name] = density;
     nameInput.value = '';
     densityInput.value = '';
@@ -930,7 +1152,10 @@ function renderSettingFeatures() {
     settings.features.forEach(name => {
         const itemDiv = document.createElement('div');
         itemDiv.className = 'settings-item';
-        itemDiv.innerHTML = `<span>${name}</span><button class="btn btn-danger" data-action="delete-feature" data-key="${name}">حذف</button>`;
+        itemDiv.innerHTML = `
+            <span>${name}</span>
+            <button class="btn btn-danger" data-action="delete-feature" data-key="${name}">حذف</button>
+        `;
         container.appendChild(itemDiv);
     });
 }
@@ -938,8 +1163,14 @@ function renderSettingFeatures() {
 function addSettingFeature() {
     const nameInput = document.getElementById('newFeatureName');
     const name = nameInput.value.trim();
-    if (!name) { alert('لطفاً نام ویژگی را وارد کنید.'); return; }
-    if (settings.features.includes(name)) { alert('این ویژگی از قبل وجود دارد.'); return; }
+    if (!name) {
+        alert('لطفاً نام ویژگی را وارد کنید.');
+        return;
+    }
+    if (settings.features.includes(name)) {
+        alert('این ویژگی از قبل وجود دارد.');
+        return;
+    }
     settings.features.push(name);
     nameInput.value = '';
     renderSettingFeatures();
@@ -971,8 +1202,10 @@ function renderSettingPrefixes() {
         const [type, feature] = key.split('-');
         const itemDiv = document.createElement('div');
         itemDiv.className = 'settings-item';
-        itemDiv.innerHTML = `<span>نوع: <strong>${type}</strong>، ویژگی: <strong>${feature}</strong> ← پیش‌کد: <strong>${prefix}</strong></span>
-                             <button class="btn btn-danger" data-action="delete-prefix" data-key="${key}">حذف</button>`;
+        itemDiv.innerHTML = `
+            <span>نوع: <strong>${type}</strong>، ویژگی: <strong>${feature}</strong> ← پیش‌کد: <strong>${prefix}</strong></span>
+            <button class="btn btn-danger" data-action="delete-prefix" data-key="${key}">حذف</button>
+        `;
         container.appendChild(itemDiv);
     });
 }
@@ -984,15 +1217,18 @@ function addSettingPrefix() {
     const code = codeInput.value.trim();
     
     if (!feature) {
-        alert('لطفاً یک ویژگی برای تعریف قانون انتخاب کنید.'); return;
+        alert('لطفاً یک ویژگی برای تعریف قانون انتخاب کنید.');
+        return;
     }
     if (!/^\d{4}$/.test(code)) {
-        alert('پیش‌کد باید یک عدد ۴ رقمی باشد.'); return;
+        alert('پیش‌کد باید یک عدد ۴ رقمی باشد.');
+        return;
     }
 
     const key = `${type}-${feature}`;
     if (settings.companyCodePrefixes[key]) {
-        alert('یک قانون برای این ترکیب از نوع و ویژگی از قبل وجود دارد.'); return;
+        alert('یک قانون برای این ترکیب از نوع و ویژگی از قبل وجود دارد.');
+        return;
     }
 
     settings.companyCodePrefixes[key] = code;
@@ -1043,7 +1279,9 @@ function showSheetPage() {
     updateSheetDependencies();
 }
 
-function showResultsPage() { showPage('page-results'); }
+function showResultsPage() { 
+    showPage('page-results'); 
+}
 
 function showSettingsPage() {
     showPage('page-settings');
@@ -1073,7 +1311,10 @@ function startOver() {
 }
 
 function clearAllCoils() {
-    if (coils.length === 0) { alert("لیست کویل‌ها از قبل خالی است."); return; }
+    if (coils.length === 0) {
+        alert("لیست کویل‌ها از قبل خالی است.");
+        return;
+    }
     if (confirm('آیا مطمئن هستید که می‌خواهید لیست تمام کویل‌ها را پاک کنید؟')) {
         coils = [];
         localStorage.removeItem(COILS_STORAGE_KEY);
@@ -1083,7 +1324,10 @@ function clearAllCoils() {
 }
 
 function clearAllSheetOrders() {
-    if (sheetOrders.length === 0) { alert("لیست ابعاد برش از قبل خالی است."); return; }
+    if (sheetOrders.length === 0) {
+        alert("لیست ابعاد برش از قبل خالی است.");
+        return;
+    }
     if (confirm('آیا مطمئن هستید که می‌خواهید لیست تمام ابعاد برش را پاک کنید؟')) {
         sheetOrders = [];
         localStorage.removeItem(ORDERS_STORAGE_KEY);
@@ -1097,14 +1341,16 @@ function showAlert(message) {
     document.getElementById('errorModal').style.display = 'flex';
 }
 
-function closeModal() { document.getElementById('errorModal').style.display = 'none'; }
-function showAboutModal() { document.getElementById('aboutModal').style.display = 'flex'; }
-function closeAboutModal() { document.getElementById('aboutModal').style.display = 'none'; }
-function showHelpModal() { document.getElementById('helpModal').style.display = 'flex'; }
-function closeHelpModal() { document.getElementById('helpModal').style.display = 'none'; }
+function showAboutModal() {
+    document.getElementById('aboutModal').style.display = 'flex';
+}
 
-function printResults() {
-    window.print();
+function showHelpModal() {
+    document.getElementById('helpModal').style.display = 'flex';
+}
+
+function closeHelpModal() {
+    document.getElementById('helpModal').style.display = 'none';
 }
 
 // --- DATA MANAGEMENT & LOCAL STORAGE ---
@@ -1116,8 +1362,12 @@ function saveDataToLocalStorage() {
 function loadDataFromLocalStorage() {
     const savedCoils = localStorage.getItem(COILS_STORAGE_KEY);
     const savedOrders = localStorage.getItem(ORDERS_STORAGE_KEY);
-    if (savedCoils) coils = JSON.parse(savedCoils);
-    if (savedOrders) sheetOrders = JSON.parse(savedOrders);
+    if (savedCoils) {
+        coils = JSON.parse(savedCoils);
+    }
+    if (savedOrders) {
+        sheetOrders = JSON.parse(savedOrders);
+    }
 }
 
 // --- DYNAMIC FORM LOGIC ---
@@ -1147,14 +1397,18 @@ function updateCoilFeatureDropdown() {
 }
 
 function updateCompanyCodePrefix(formType) {
-    if (formType !== 'coil') return;
+    if (formType !== 'coil') {
+        return;
+    }
 
     const type = document.getElementById(`coilType`).value;
     const feature = document.getElementById(`coilFeature`).value;
     const prefixSpan = document.getElementById(`coilCodePrefix`);
 
     if (!type || !feature || !prefixSpan) {
-        if(prefixSpan) prefixSpan.textContent = '----';
+        if(prefixSpan) {
+            prefixSpan.textContent = '----';
+        }
         return;
     }
 
@@ -1180,15 +1434,24 @@ function exportToXLSX(type) {
                 displayCodeForExport = prefix + suffix;
             }
             return {
-                'کد انبار': displayCodeForExport, 'نوع': c.type, 'ویژگی': c.feature,
-                'وزن': c.originalWeight, 'عرض': c.width, 'ضخامت': c.thickness, 'دانسیته': c.density
+                'کد انبار': displayCodeForExport, 
+                'نوع': c.type, 
+                'ویژگی': c.feature,
+                'وزن': c.originalWeight, 
+                'عرض': c.width, 
+                'ضخامت': c.thickness, 
+                'دانسیته': c.density
             };
         });
         filename = "coils-export.xlsx";
     } else {
         data = sheetOrders.map(s => ({
-            'کد انبار': s.companyCode, 'نوع': s.type, 'ویژگی': s.feature,
-            'طول': s.length, 'عرض': s.width, 'ضخامت': s.thickness
+            'کد انبار': s.companyCode, 
+            'نوع': s.type, 
+            'ویژگی': s.feature,
+            'طول': s.length, 
+            'عرض': s.width, 
+            'ضخامت': s.thickness
         }));
         filename = "sheets-export.xlsx";
     }
@@ -1230,7 +1493,9 @@ function importFromXLSX(type) {
 }
 
 function processImportedCoils(data, replace) {
-    if (replace) coils = [];
+    if (replace) {
+        coils = [];
+    }
     let importedCount = 0, skippedCount = 0;
     let skippedReasons = [];
     
@@ -1244,9 +1509,13 @@ function processImportedCoils(data, replace) {
         }
 
         const newCoil = {
-            companyCode: internalCode, type: row['نوع']?.trim(), feature: row['ویژگی']?.toString().trim(),
-            originalWeight: parseFloat(row['وزن']), width: parseFloat(row['عرض']),
-            thickness: parseFloat(row['ضخامت']), density: parseFloat(row['دانسیته'])
+            companyCode: internalCode, 
+            type: row['نوع']?.trim(), 
+            feature: row['ویژگی']?.toString().trim(),
+            originalWeight: parseFloat(row['وزن']), 
+            width: parseFloat(row['عرض']),
+            thickness: parseFloat(row['ضخامت']), 
+            density: parseFloat(row['دانسیته'])
         };
         
         const validationError = validateImportedCoil(newCoil, index + 2, exportedCode);
@@ -1265,7 +1534,9 @@ function processImportedCoils(data, replace) {
     renderCoilList();
     saveDataToLocalStorage();
     let report = `پردازش فایل کویل‌ها کامل شد.\n\nتعداد وارد شده: ${importedCount}\nتعداد نادیده گرفته شده: ${skippedCount}`;
-    if (skippedCount > 0) report += "\n\nدلایل:\n" + skippedReasons.join("\n");
+    if (skippedCount > 0) {
+        report += "\n\nدلایل:\n" + skippedReasons.join("\n");
+    }
     alert(report);
 }
 
@@ -1276,18 +1547,24 @@ function validateImportedCoil(coil, rowIndex, originalCode) {
     if (!Object.keys(settings.densities).includes(coil.type) || !settings.features.includes(coil.feature)) return `ردیف ${rowIndex}: نوع یا ویژگی تعریف نشده است.`;
     if (coils.some(c => c.companyCode === coil.companyCode)) return `ردیف ${rowIndex} (${originalCode}): کد انبار تکراری است.`;
     if (coils.some(c => c.type === coil.type && c.feature === coil.feature && c.width === coil.width && c.thickness === coil.thickness)) return `ردیف ${rowIndex}: کویلی با مشخصات یکسان قبلاً ثبت شده است.`;
-    return null; // No error
+    return null;
 }
 
 function processImportedSheets(data, replace) {
-    if (replace) sheetOrders = [];
+    if (replace) {
+        sheetOrders = [];
+    }
     let importedCount = 0, skippedCount = 0;
     let skippedReasons = [];
 
     data.forEach((row, index) => {
         const newSheet = {
-            companyCode: row['کد انبار']?.toString().trim(), type: row['نوع']?.trim(), feature: row['ویژگی']?.toString().trim(),
-            length: parseFloat(row['طول']), width: parseFloat(row['عرض']), thickness: parseFloat(row['ضخامت'])
+            companyCode: row['کد انبار']?.toString().trim(), 
+            type: row['نوع']?.trim(), 
+            feature: row['ویژگی']?.toString().trim(),
+            length: parseFloat(row['طول']), 
+            width: parseFloat(row['عرض']), 
+            thickness: parseFloat(row['ضخامت'])
         };
 
         const validationError = validateImportedSheet(newSheet, index + 2);
@@ -1305,7 +1582,9 @@ function processImportedSheets(data, replace) {
     renderSheetOrderList();
     saveDataToLocalStorage();
     let report = `پردازش فایل ابعاد کامل شد.\n\nتعداد وارد شده: ${importedCount}\nتعداد نادیده گرفته شده: ${skippedCount}`;
-    if (skippedCount > 0) report += "\n\nدلایل:\n" + skippedReasons.join("\n");
+    if (skippedCount > 0) {
+        report += "\n\nدلایل:\n" + skippedReasons.join("\n");
+    }
     alert(report);
 }
 
@@ -1316,7 +1595,7 @@ function validateImportedSheet(sheet, rowIndex) {
     if (!Object.keys(settings.densities).includes(sheet.type) || !settings.features.includes(sheet.feature)) return `ردیف ${rowIndex}: نوع یا ویژگی تعریف نشده است.`;
     if (sheetOrders.some(s => s.companyCode === sheet.companyCode)) return `ردیف ${rowIndex} (${sheet.companyCode}): کد انبار تکراری است.`;
     if (sheetOrders.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width)) return `ردیف ${rowIndex}: ابعاد برشی با مشخصات یکسان قبلاً ثبت شده است.`;
-    return null; // No error
+    return null;
 }
 
 // --- CRUD & RENDER FUNCTIONS ---
@@ -1330,15 +1609,36 @@ function saveCoil() {
     const thickness = parseFloat(document.getElementById('coilThickness').value);
     const density = parseFloat(document.getElementById('coilDensity').value);
     
-    if (prefix === '----') { showAlert('برای این ترکیب از نوع و ویژگی، پیش‌کدی تعریف نشده است.'); return; }
-    if (!/^\d{4}$/.test(suffix)) { showAlert('بخش اول کد انبار باید یک عدد ۴ رقمی باشد.'); return; }
+    if (prefix === '----') {
+        showAlert('برای این ترکیب از نوع و ویژگی، پیش‌کدی تعریف نشده است.');
+        return;
+    }
+    if (!/^\d{4}$/.test(suffix)) {
+        showAlert('بخش اول کد انبار باید یک عدد ۴ رقمی باشد.');
+        return;
+    }
     const companyCode = suffix + prefix;
 
-    if (!feature) { showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.'); return; }
-    if (!weight || !width || !thickness || !density || weight <= 0 || width <= 0 || thickness <= 0 || density <= 0) { showAlert('لطفاً تمام مشخصات کویل را با مقادیر مثبت وارد کنید.'); return; }
-    if (thickness > 5) { showAlert('ضخامت کویل نباید بیشتر از 5 میلی‌متر باشد.'); return; }
-    if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) { showAlert('کد انبار وارد شده برای کویل دیگری وجود دارد.'); return; }
-    if (coils.some(c => c.id !== editingCoilId && c.type === type && c.feature === feature && c.width === width && c.thickness === thickness)) { showAlert('کویلی با مشخصات یکسان قبلاً ثبت شده است.'); return; }
+    if (!feature) {
+        showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.');
+        return;
+    }
+    if (!weight || !width || !thickness || !density || weight <= 0 || width <= 0 || thickness <= 0 || density <= 0) {
+        showAlert('لطفاً تمام مشخصات کویل را با مقادیر مثبت وارد کنید.');
+        return;
+    }
+    if (thickness > 5) {
+        showAlert('ضخامت کویل نباید بیشتر از 5 میلی‌متر باشد.');
+        return;
+    }
+    if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) {
+        showAlert('کد انبار وارد شده برای کویل دیگری وجود دارد.');
+        return;
+    }
+    if (coils.some(c => c.id !== editingCoilId && c.type === type && c.feature === feature && c.width === width && c.thickness === thickness)) {
+        showAlert('کویلی با مشخصات یکسان قبلاً ثبت شده است.');
+        return;
+    }
     
     if (editingCoilId) {
         const index = coils.findIndex(c => c.id === editingCoilId);
@@ -1357,14 +1657,15 @@ function saveCoil() {
 
 function editCoil(id) {
     const coilToEdit = coils.find(c => c.id === id);
-    if (!coilToEdit) return;
+    if (!coilToEdit) {
+        return;
+    }
 
     editingCoilId = id;
     document.getElementById('coilType').value = coilToEdit.type;
 
-    updateCoilFeatureDropdown(); // This will also trigger updateCompanyCodePrefix
+    updateCoilFeatureDropdown();
     document.getElementById('coilFeature').value = coilToEdit.feature;
-    // Manually trigger the prefix update again to be sure
     updateCompanyCodePrefix('coil');
 
     if (coilToEdit.companyCode && coilToEdit.companyCode.length === 8) {
@@ -1440,7 +1741,23 @@ function renderCoilList() {
         `;
     }).join('');
 
-    listDiv.innerHTML = `<table><thead><tr><th>کد انبار</th><th>نوع</th><th>ویژگی</th><th>وزن (ک.گ)</th><th>عرض (م.م)</th><th>ضخامت (م.م)</th><th>عملیات</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+    listDiv.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>کد انبار</th>
+                    <th>نوع</th>
+                    <th>ویژگی</th>
+                    <th>وزن (ک.گ)</th>
+                    <th>عرض (م.م)</th>
+                    <th>ضخامت (م.م)</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRows}
+            </tbody>
+        </table>`;
 }
 
 // Sheets
@@ -1452,13 +1769,34 @@ function saveSheetOrder() {
     const length = parseFloat(document.getElementById('sheetLength').value);
     const width = parseFloat(document.getElementById('sheetWidth').value);
     
-    if (!/^\d{6,7}$/.test(companyCode)) { showAlert('کد انبار ورق باید یک عدد ۶ یا ۷ رقمی باشد.'); return; }
-    if (!feature) { showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.'); return; }
-    if (isNaN(thickness)) { showAlert('لطفاً یک ضخامت معتبر انتخاب کنید.'); return; }
-    if (!length || !width || length <= 0 || width <= 0) { showAlert('لطفاً طول و عرض را با مقادیر مثبت وارد کنید.'); return; }
-    if (width > length) { showAlert('عرض قطعه نمی‌تواند بیشتر از طول آن باشد.'); return; }
-    if (sheetOrders.some(s => s.id !== editingSheetId && s.companyCode === companyCode)) { showAlert('کد انبار وارد شده برای ورق دیگری وجود دارد.'); return; }
-    if (sheetOrders.some(s => s.id !== editingSheetId && s.type === type && s.feature === feature && s.thickness === thickness && s.length === length && s.width === width)) { showAlert('ابعاد برشی با مشخصات یکسان قبلاً ثبت شده است.'); return; }
+    if (!/^\d{6,7}$/.test(companyCode)) {
+        showAlert('کد انبار ورق باید یک عدد ۶ یا ۷ رقمی باشد.');
+        return;
+    }
+    if (!feature) {
+        showAlert('لطفاً یک ویژگی معتبر انتخاب کنید.');
+        return;
+    }
+    if (isNaN(thickness)) {
+        showAlert('لطفاً یک ضخامت معتبر انتخاب کنید.');
+        return;
+    }
+    if (!length || !width || length <= 0 || width <= 0) {
+        showAlert('لطفاً طول و عرض را با مقادیر مثبت وارد کنید.');
+        return;
+    }
+    if (width > length) {
+        showAlert('عرض قطعه نمی‌تواند بیشتر از طول آن باشد.');
+        return;
+    }
+    if (sheetOrders.some(s => s.id !== editingSheetId && s.companyCode === companyCode)) {
+        showAlert('کد انبار وارد شده برای ورق دیگری وجود دارد.');
+        return;
+    }
+    if (sheetOrders.some(s => s.id !== editingSheetId && s.type === type && s.feature === feature && s.thickness === thickness && s.length === length && s.width === width)) {
+        showAlert('ابعاد برشی با مشخصات یکسان قبلاً ثبت شده است.');
+        return;
+    }
     
     if (editingSheetId) {
         const index = sheetOrders.findIndex(s => s.id === editingSheetId);
@@ -1477,7 +1815,9 @@ function saveSheetOrder() {
 
 function editSheetOrder(id) {
     const orderToEdit = sheetOrders.find(s => s.id === id);
-    if (!orderToEdit) return;
+    if (!orderToEdit) {
+        return;
+    }
 
     editingSheetId = id;
     document.getElementById('sheetType').value = orderToEdit.type;
@@ -1485,7 +1825,6 @@ function editSheetOrder(id) {
     document.getElementById('sheetLength').value = orderToEdit.length;
     document.getElementById('sheetWidth').value = orderToEdit.width;
 
-    // Trigger dependency chain
     updateAvailableFeatures();
     document.getElementById('sheetFeature').value = orderToEdit.feature;
     updateAvailableThicknesses();
@@ -1524,16 +1863,10 @@ function resetSheetForm() {
     document.getElementById('sheetCancelBtn').style.display = 'none';
 }
 
-/**
- * Main function to update sheet form dependencies (Type -> Feature -> Thickness).
- */
 function updateSheetDependencies() {
     updateAvailableFeatures();
 }
 
-/**
- * Updates the "Feature" dropdown based on the selected "Type".
- */
 function updateAvailableFeatures() {
     const selectedType = document.getElementById('sheetType').value;
     const featureSelect = document.getElementById('sheetFeature');
@@ -1551,13 +1884,9 @@ function updateAvailableFeatures() {
     } else {
         featureSelect.innerHTML = '<option disabled>ویژگی برای این نوع یافت نشد</option>';
     }
-    // Trigger the next step in the chain
     updateAvailableThicknesses();
 }
 
-/**
- * Updates the "Thickness" dropdown based on selected "Type" and "Feature".
- */
 function updateAvailableThicknesses() {
     const selectedType = document.getElementById('sheetType').value;
     const selectedFeature = document.getElementById('sheetFeature').value;
@@ -1585,7 +1914,6 @@ function updateAvailableThicknesses() {
     }
 }
 
-
 function renderSheetOrderList() {
     const listDiv = document.getElementById('sheetOrderList');
     if (sheetOrders.length === 0) {
@@ -1607,13 +1935,30 @@ function renderSheetOrderList() {
         </tr>
     `).join('');
 
-    listDiv.innerHTML = `<table><thead><tr><th>کد انبار</th><th>نوع</th><th>ویژگی</th><th>ضخامت</th><th>ابعاد (م.م)</th><th>عملیات</th></tr></thead><tbody>${tableRows}</tbody></table>`;
+    listDiv.innerHTML = `
+        <table>
+            <thead>
+                <tr>
+                    <th>کد انبار</th>
+                    <th>نوع</th>
+                    <th>ویژگی</th>
+                    <th>ضخامت</th>
+                    <th>ابعاد (م.م)</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${tableRows}
+            </tbody>
+        </table>`;
 }
 
 // --- EVENT DELEGATION HANDLERS ---
 function handleCoilListActions(event) {
     const target = event.target.closest('button');
-    if (!target) return;
+    if (!target) {
+        return;
+    }
     
     const { action, id } = target.dataset;
     if (action === 'edit') {
@@ -1625,7 +1970,9 @@ function handleCoilListActions(event) {
 
 function handleSheetOrderListActions(event) {
     const target = event.target.closest('button');
-    if (!target) return;
+    if (!target) {
+        return;
+    }
 
     const { action, id } = target.dataset;
     if (action === 'edit') {
@@ -1637,7 +1984,9 @@ function handleSheetOrderListActions(event) {
 
 function handleSettingsListActions(event) {
     const target = event.target.closest('button[data-action]');
-    if (!target) return;
+    if (!target) {
+        return;
+    }
 
     const { action, key } = target.dataset;
     switch(action) {
@@ -1653,24 +2002,43 @@ function handleSettingsListActions(event) {
     }
 }
 
-
 // --- CORE OPTIMIZATION LOGIC ---
 function runOptimization() {
-    if (sheetOrders.length === 0) { showAlert('ابتدا باید حداقل یک ابعاد برش اضافه کنید.'); return; }
+    if (sheetOrders.length === 0) {
+        showAlert('ابتدا باید حداقل یک ابعاد برش اضافه کنید.');
+        return;
+    }
     const maxWastePercentage = parseFloat(document.getElementById('maxWaste').value);
-    if (isNaN(maxWastePercentage) || maxWastePercentage < 0 || maxWastePercentage > 100) { showAlert('لطفاً برای حداکثر ضایعات، یک عدد بین ۰ تا ۱۰۰ وارد کنید.'); return; }
+    if (isNaN(maxWastePercentage) || maxWastePercentage < 0 || maxWastePercentage > 100) {
+        showAlert('لطفاً برای حداکثر ضایعات، یک عدد بین ۰ تا ۱۰۰ وارد کنید.');
+        return;
+    }
     
     const resultsContainer = document.getElementById('resultsContainer');
-    resultsContainer.innerHTML = 'در حال پردازش...';
+    resultsContainer.innerHTML = '<h2>نتایج: تمام طرح‌های برش ممکن</h2><p>در حال پردازش...</p>';
 
-    // Use setTimeout to allow the UI to update before the potentially long calculation
     setTimeout(() => {
         const availableCoils = JSON.parse(JSON.stringify(coils));
         const pendingOrders = JSON.parse(JSON.stringify(sheetOrders));
-        resultsContainer.innerHTML = '';
+        resultsContainer.innerHTML = '<h2>نتایج: تمام طرح‌های برش ممکن</h2>'; // Clear "Processing..."
+
         const groupKey = (item) => `${item.type}-${item.feature}-${item.thickness}`;
-        const groupedCoils = availableCoils.reduce((acc, coil) => { const key = groupKey(coil); if (!acc[key]) acc[key] = []; acc[key].push(coil); return acc; }, {});
-        const groupedOrders = pendingOrders.reduce((acc, order) => { const key = groupKey(order); if (!acc[key]) acc[key] = []; acc[key].push(order); return acc; }, {});
+        const groupedCoils = availableCoils.reduce((acc, coil) => { 
+            const key = groupKey(coil); 
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(coil); 
+            return acc; 
+        }, {});
+        const groupedOrders = pendingOrders.reduce((acc, order) => { 
+            const key = groupKey(order); 
+            if (!acc[key]) {
+                acc[key] = [];
+            }
+            acc[key].push(order); 
+            return acc; 
+        }, {});
         
         let hasAnyResultsAtAll = false;
         
@@ -1727,15 +2095,16 @@ function runOptimization() {
         }
         
         if (!hasAnyResultsAtAll && Object.keys(groupedOrders).length === 0) {
-            resultsContainer.innerHTML = '<p>هیچ ابعاد برشی برای پردازش وجود ندارد.</p>';
+            resultsContainer.innerHTML = '<h2>نتایج: تمام طرح‌های برش ممکن</h2><p>هیچ ابعاد برشی برای پردازش وجود ندارد.</p>';
         }
         
         showResultsPage();
-    }, 50); // 50ms timeout
+    }, 50);
 }
 
 function findAllWidthPatterns(orders, coilWidth) {
     const allPatterns = new Map();
+
     function findCombinations(startIndex, currentPattern) {
         for (let i = startIndex; i < orders.length; i++) {
             const order = orders[i];
@@ -1755,6 +2124,7 @@ function findAllWidthPatterns(orders, coilWidth) {
             }
         }
     }
+    
     function addPattern(pattern) {
         const consolidatedSheets = {};
         pattern.sheets.forEach(sheet => {
@@ -1765,8 +2135,10 @@ function findAllWidthPatterns(orders, coilWidth) {
                 consolidatedSheets[key] = { ...sheet, countInPattern: 1 };
             }
         });
+
         const finalSheets = Object.values(consolidatedSheets);
         const signature = finalSheets.map(s => `${s.id}:${s.orientation}:${s.countInPattern}`).sort().join(';');
+        
         if (!allPatterns.has(signature)) {
             let totalWidth = 0;
             let cutLength = 0;
@@ -1777,12 +2149,15 @@ function findAllWidthPatterns(orders, coilWidth) {
             allPatterns.set(signature, { sheets: finalSheets, totalWidth, cutLength, signature });
         }
     }
+
     findCombinations(0, { sheets: [], totalWidth: 0 });
     return Array.from(allPatterns.values());
 }
 
 function calculateCoilLength(coil) {
-    if (coil.weight <= 0) return 0;
+    if (coil.weight <= 0) {
+        return 0;
+    }
     const coilVolCm3 = (coil.weight * 1000) / coil.density;
     const lengthMm = (coilVolCm3 / ((coil.thickness / 10) * (coil.width / 10))) * 10;
     return lengthMm;
@@ -1792,8 +2167,13 @@ function createPlanCard(plan) {
     const card = document.createElement('div');
     card.className = 'result-card';
     card.style.cssText = "background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
+    
     const { coil, pattern, wastePercentage, cutsPossible } = plan;
-    const sheetListHtml = pattern.sheets.map(s => `<li><strong>${s.countInPattern} عدد</strong> ورق ${s.length}×${s.width} (کد: ${s.companyCode}, برش ${s.orientation})</li>`).join('');
+    
+    const sheetListHtml = pattern.sheets.map(s => {
+        return `<li><strong>${s.countInPattern} عدد</strong> ورق ${s.length}×${s.width} (کد: ${s.companyCode}, برش ${s.orientation})</li>`;
+    }).join('');
+    
     const summaryHtml = pattern.sheets.map(s => {
         const totalSheetCount = cutsPossible * s.countInPattern;
         return `<li><strong>ورق ${s.length}×${s.width} (کد: ${s.companyCode}):</strong> <span style="font-weight: bold; color: #667eea; font-size: 1.1em;">${totalSheetCount}</span> عدد</li>`;
@@ -1803,7 +2183,21 @@ function createPlanCard(plan) {
         ? `<span dir="ltr">${coil.companyCode.substring(4)}${coil.companyCode.substring(0, 4)}</span>`
         : coil.companyCode;
         
-    card.innerHTML = `<h4 style="display: flex; justify-content: space-between; align-items: center;"><span>طرح برش از کویل ${displayCode} (عرض: ${coil.width} م.م)</span><span style="color: ${wastePercentage > 10 ? '#dc3545' : '#28a745'}; font-weight: bold;">ضایعات: ${wastePercentage.toFixed(2)}%</span></h4><p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p><ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul><p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p><p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p><hr><div style="font-size: 1.1em; color: #333;"><p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p><ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">${summaryHtml}</ul></div>`;
+    card.innerHTML = `
+        <h4 style="display: flex; justify-content: space-between; align-items: center;">
+            <span>طرح برش از کویل ${displayCode} (عرض: ${coil.width} م.م)</span>
+            <span style="color: ${wastePercentage > 10 ? '#dc3545' : '#28a745'}; font-weight: bold;">ضایعات: ${wastePercentage.toFixed(2)}%</span>
+        </h4>
+        <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
+        <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
+        <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
+        <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
+        <hr>
+        <div style="font-size: 1.1em; color: #333;">
+            <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
+            <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">${summaryHtml}</ul>
+        </div>
+    `;
     return card;
 }
 
