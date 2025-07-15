@@ -379,7 +379,7 @@
             .container { 
                 box-shadow: none !important; 
                 border: none; 
-                max-width: 100%; 
+                max-width: 100% !important; /* Critical for print layout */
                 padding: 10px;
                 overflow: visible !important;
             }
@@ -496,15 +496,16 @@
 
 <script>
 // =================================================================================
-// REFACTORED SCRIPT - V2.7.5
+// REFACTORED SCRIPT - V2.7.6
 // Changes:
-// 1. Implemented a robust fix for the incomplete PDF export by forcing the
-//    viewport to scroll to the top before PDF generation.
-// 2. Added a short timeout to ensure the DOM updates (scroll) before html2pdf runs.
+// 1. Implemented a robust fix for the native print functionality (`window.print`)
+//    by temporarily adjusting container styles before printing and restoring
+//    them afterwards. This prevents horizontal content truncation.
+// 2. Maintained the existing fix for PDF export, ensuring both features work correctly.
 // =================================================================================
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '2.7.5';
+const APP_VERSION = '2.7.6';
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -1015,22 +1016,48 @@ function bindEventListeners() {
 
 /**
  * Prepares the results for printing by adding a title and then calling window.print().
+ * This function now includes a fix to prevent content from being cut off.
  */
 function printResults() {
+    const mainContainer = document.getElementById('mainContainer');
     const resultsContainer = document.getElementById('resultsContainer');
     const printTitle = document.createElement('h2');
+    
     printTitle.textContent = 'نتایج طرح‌های برش';
     printTitle.className = 'pdf-only-title';
     resultsContainer.prepend(printTitle);
+
+    // --- FIX FOR PRINT LAYOUT ---
+    // Store original styles to restore them after printing.
+    const originalMaxWidth = mainContainer.style.maxWidth;
+    const originalOverflow = mainContainer.style.overflow;
+
+    // Temporarily remove style constraints that interfere with browser's print rendering.
+    mainContainer.style.maxWidth = 'none';
+    mainContainer.style.overflow = 'visible';
     
-    window.print();
-    
-    window.addEventListener('afterprint', () => {
+    // A cleanup function to restore everything after printing.
+    const cleanupAfterPrint = () => {
+        // Restore original styles to the container.
+        mainContainer.style.maxWidth = originalMaxWidth;
+        mainContainer.style.overflow = originalOverflow;
+        
+        // Remove the temporary title.
         if (resultsContainer.contains(printTitle)) {
             resultsContainer.removeChild(printTitle);
         }
-    }, { once: true });
+        
+        // Remove the event listener itself to prevent it from firing again.
+        window.removeEventListener('afterprint', cleanupAfterPrint);
+    };
+    
+    // Listen for the 'afterprint' event to run the cleanup.
+    window.addEventListener('afterprint', cleanupAfterPrint);
+
+    // Trigger the browser's native print dialog.
+    window.print();
 }
+
 
 /**
  * Exports the content of the results container to a PDF file, handling overflow and scroll issues.
