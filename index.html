@@ -80,12 +80,21 @@
         .page.active { 
             display: block; 
         }
-        .form-section, .list-section, .results-section, .settings-section {
+        .form-section, .list-section, .settings-section {
             background: #f8f9fa;
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
             border: 1px solid #e9ecef;
+            position: relative;
+            z-index: 1;
+        }
+        .results-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 2px solid #764ba2; /* CHANGED: Made border thicker and more colorful */
             position: relative;
             z-index: 1;
         }
@@ -369,6 +378,16 @@
             display: none;
         }
 
+        /* NEW/MODIFIED: Style for result cards */
+        .result-card {
+            background: #fff;
+            border: 2px solid #aaa; /* CHANGED: Was 1px solid #ddd in inline style, now bolder */
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
         @media print {
             body { 
                 background: none !important; 
@@ -413,9 +432,12 @@
             th { 
                 background-color: #f2f2f2 !important; 
             }
+            .results-section {
+                border: 2px solid #333 !important; /* CHANGED: Print border for main results */
+            }
             .result-card, .list-section, .form-section { 
                 box-shadow: none !important; 
-                border: 1px solid #ddd !important; 
+                border: 2px solid #333 !important; /* CHANGED: Print border for result cards */
                 page-break-inside: avoid; 
                 margin-top: 15px; 
             }
@@ -496,7 +518,7 @@
 
 <script>
 // =================================================================================
-// REFACTORED SCRIPT - V2.7.6
+// REFACTORED SCRIPT - V2.7.7
 // Changes:
 // 1. Implemented a robust fix for the native print functionality (`window.print`)
 //    by temporarily adjusting container styles before printing and restoring
@@ -505,7 +527,7 @@
 // =================================================================================
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '2.7.6';
+const APP_VERSION = '2.7.7';
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -2192,8 +2214,8 @@ function calculateCoilLength(coil) {
 
 function createPlanCard(plan) {
     const card = document.createElement('div');
+    // REMOVED: Inline style was removed from here and moved to CSS.
     card.className = 'result-card';
-    card.style.cssText = "background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
     
     const { coil, pattern, wastePercentage, cutsPossible } = plan;
     
