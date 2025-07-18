@@ -94,7 +94,7 @@
             padding: 20px;
             border-radius: 10px;
             margin-bottom: 20px;
-            border: 2px solid #764ba2; /* CHANGED: Made border thicker and more colorful */
+            border: 2px solid #764ba2;
             position: relative;
             z-index: 1;
         }
@@ -315,7 +315,8 @@
             background-color: rgba(0,0,0,0.5);
             z-index: 1000;
             justify-content: center;
-            align-items: center; 
+            align-items: center;
+            overflow-y: auto;
         }
         .modal-content { 
             background-color: white;
@@ -325,6 +326,7 @@
             width: 90%;
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             position: relative; 
+            margin: 20px 0;
         }
         .modal-content h2 { 
             text-align: center;
@@ -335,6 +337,7 @@
             margin: 0 0 20px;
             font-size: 1.1em;
             text-align: center; 
+            white-space: pre-wrap;
         }
         #aboutModal .modal-content p { 
             color: #333;
@@ -377,11 +380,9 @@
         .pdf-only-title {
             display: none;
         }
-
-        /* NEW/MODIFIED: Style for result cards */
         .result-card {
             background: #fff;
-            border: 2px solid #aaa; /* CHANGED: Was 1px solid #ddd in inline style, now bolder */
+            border: 2px solid #aaa;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
@@ -398,7 +399,7 @@
             .container { 
                 box-shadow: none !important; 
                 border: none; 
-                max-width: 100% !important; /* Critical for print layout */
+                max-width: 100% !important; 
                 padding: 10px;
                 overflow: visible !important;
             }
@@ -433,11 +434,11 @@
                 background-color: #f2f2f2 !important; 
             }
             .results-section {
-                border: 2px solid #333 !important; /* CHANGED: Print border for main results */
+                border: 2px solid #333 !important;
             }
             .result-card, .list-section, .form-section { 
                 box-shadow: none !important; 
-                border: 2px solid #333 !important; /* CHANGED: Print border for result cards */
+                border: 2px solid #333 !important;
                 page-break-inside: avoid; 
                 margin-top: 15px; 
             }
@@ -487,16 +488,19 @@
                 <ul>
                     <li><strong>نوع ورق و ویژگی:</strong> با انتخاب نوع ورق، لیست ویژگی‌ها به موارد مجاز برای آن نوع محدود می‌شود.</li>
                     <li><strong>کد انبار:</strong> شما باید ۴ رقم اول کد را وارد کرده و پیش‌کد ۴ رقمی که به صورت خودکار در سمت چپ نمایش داده می‌شود، کد ۸ رقمی را تکمیل می‌کند.</li>
+                    <li><strong>عرض کویل:</strong> عرض کویل نمی‌تواند بیشتر از 2500 میلی‌متر باشد.</li>
+                    <li><strong>مرتب‌سازی:</strong> لیست کویل‌ها به صورت خودکار بر اساس نوع، ویژگی، ضخامت و عرض مرتب می‌شود.</li>
                 </ul>
                 <h4>مرحله ۲: ورود ابعاد برش</h4>
                 <ul>
                     <li><strong>کد انبار:</strong> در این بخش، یک کد ۶ یا ۷ رقمی برای سفارش برش وارد کنید.</li>
                     <li>توجه کنید که لیست‌های کشویی **"ویژگی"** و **"ضخامت"** فقط مقادیری را نمایش می‌ده دهند که برای آن‌ها کویل موجود در انبار (مرحله ۱) ثبت شده باشد.</li>
+                     <li><strong>مرتب‌سازی:</strong> لیست ابعاد برش به صورت خودکار بر اساس نوع، ویژگی، ضخامت و ابعاد مرتب می‌شود.</li>
                 </ul>
                 <hr>
                 <h4>ورود و خروج با Excel</h4>
                 <p>فایل شما باید دقیقاً شامل ستون‌های زیر باشد:</p>
-                <p><strong>برای کویل‌ها (کد انبار ۸ رقمی):</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code>, <code>دانسیته</code></p>
+                <p><strong>برای کویل‌ها (کد انبار ۸ رقمی):</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code></p>
                 <p><strong>برای ابعاد برش (کد انبار ۶ یا ۷ رقمی):</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
                 <div style="text-align: center; margin-top: 25px;">
                     <button class="btn btn-primary" id="helpModalCloseBtn">متوجه شدم</button>
@@ -518,16 +522,21 @@
 
 <script>
 // =================================================================================
-// REFACTORED SCRIPT - V2.7.7
+// REFACTORED SCRIPT - V2.9.2
 // Changes:
-// 1. Implemented a robust fix for the native print functionality (`window.print`)
-//    by temporarily adjusting container styles before printing and restoring
-//    them afterwards. This prevents horizontal content truncation.
-// 2. Maintained the existing fix for PDF export, ensuring both features work correctly.
+// 1. Implemented "All-or-Nothing" import logic for Sheet Orders from Excel.
+// 2. The system now validates the entire Excel file first.
+// 3. A new, comprehensive validation rule ensures that for each sheet order in
+//    the Excel file, a matching coil (Type, Feature, and Thickness) must
+//    already exist in the application.
+// 4. If any row fails validation, the entire import is aborted, and a
+//    consolidated report of all errors is displayed to the user.
+// 5. Code structure remains clean and readable as per best practices.
 // =================================================================================
 
+
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '2.7.7';
+const APP_VERSION = '2.9.2';
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -560,9 +569,9 @@ let settings = {
     showAabsalLogo: true 
 };
 
-const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v27';
-const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v27';
-const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v27';
+const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v28';
+const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v28';
+const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v28';
 
 // --- INITIALIZATION ---
 document.addEventListener('DOMContentLoaded', initializeApp);
@@ -578,6 +587,10 @@ function initializeApp() {
         return;
     }
     loadDataFromLocalStorage();
+    
+    sortCoils();
+    sortSheetOrders();
+    
     buildPageHTML();
     bindEventListeners();
     populateFormDropdowns();
@@ -595,34 +608,66 @@ function displayAppVersion() {
     document.getElementById('appVersionFooter').textContent = versionString;
 }
 
-// --- SETTINGS & AUTHENTICATION LOGIC ---
+// --- DATA SORTING LOGIC ---
 
 /**
- * Loads settings from localStorage or uses defaults.
+ * Sorts the global 'coils' array in place.
+ * Criteria: Type (asc), Feature (asc), Thickness (asc), Width (asc).
  */
+function sortCoils() {
+    coils.sort((a, b) => {
+        const typeCompare = a.type.localeCompare(b.type, 'fa');
+        if (typeCompare !== 0) return typeCompare;
+
+        const featureCompare = a.feature.localeCompare(b.feature, 'fa');
+        if (featureCompare !== 0) return featureCompare;
+
+        const thicknessCompare = a.thickness - b.thickness;
+        if (thicknessCompare !== 0) return thicknessCompare;
+        
+        return a.width - b.width;
+    });
+}
+
+/**
+ * Sorts the global 'sheetOrders' array in place.
+ * Criteria: Type (asc), Feature (asc), Thickness (asc), Area (desc).
+ */
+function sortSheetOrders() {
+    sheetOrders.sort((a, b) => {
+        const typeCompare = a.type.localeCompare(b.type, 'fa');
+        if (typeCompare !== 0) return typeCompare;
+
+        const featureCompare = a.feature.localeCompare(b.feature, 'fa');
+        if (featureCompare !== 0) return featureCompare;
+
+        const thicknessCompare = a.thickness - b.thickness;
+        if (thicknessCompare !== 0) return thicknessCompare;
+
+        const areaA = a.length * a.width;
+        const areaB = b.length * b.width;
+        return areaB - areaA;
+    });
+}
+
+
+// --- SETTINGS & AUTHENTICATION LOGIC ---
+
 function loadSettings() {
     const savedSettings = localStorage.getItem(SETTINGS_STORAGE_KEY);
     if (savedSettings) {
         const loadedSettings = JSON.parse(savedSettings);
-        settings = {
-            ...settings,
-            ...loadedSettings
-        };
+        settings = { ...settings, ...loadedSettings };
     }
 }
 
-/**
- * Saves the current settings to localStorage.
- */
 function saveSettings() {
     const potentialSettings = JSON.parse(JSON.stringify(settings)); 
     if (document.getElementById('advanced-settings-fields').style.display === 'block') {
         potentialSettings.showAabsalLogo = document.getElementById('setting-show-aabsal-logo').checked;
         
         const newUsername = document.getElementById('setting-username').value.trim();
-        if (newUsername) {
-            potentialSettings.username = newUsername;
-        }
+        if (newUsername) potentialSettings.username = newUsername;
         
         const newPassword = document.getElementById('setting-password').value.trim();
         if (newPassword) {
@@ -657,10 +702,6 @@ function saveSettings() {
     alert('تنظیمات با موفقیت ذخیره شد.');
 }
 
-/**
- * Checks if the application's license has expired.
- * @returns {boolean} True if expired, false otherwise.
- */
 function checkExpiration() {
     const today = new Date();
     const expire = new Date(settings.expireDate);
@@ -672,9 +713,6 @@ function checkExpiration() {
     return false;
 }
 
-/**
- * Handles the login attempt for the settings page.
- */
 function handleLogin() {
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
@@ -688,9 +726,6 @@ function handleLogin() {
     }
 }
 
-/**
- * Shows advanced settings after successful password entry.
- */
 function showAdvancedSettings() {
     const pass = prompt("لطفاً رمز دسترسی پیشرفته را وارد کنید:");
     if (pass === settings.superPassword) {
@@ -700,9 +735,6 @@ function showAdvancedSettings() {
     }
 }
 
-/**
- * Fills the settings form with current values.
- */
 function populateSettingsForm() {
     document.getElementById('setting-show-aabsal-logo').checked = settings.showAabsalLogo;
     document.getElementById('setting-username').value = settings.username;
@@ -717,9 +749,6 @@ function populateSettingsForm() {
 
 // --- HTML & PAGE BUILDING ---
 
-/**
- * Generates and injects the HTML for all application pages.
- */
 function buildPageHTML() {
     document.getElementById('page-coils').innerHTML = `
         <div class="form-section">
@@ -948,9 +977,6 @@ function buildPageHTML() {
         </div>`;
 }
 
-/**
- * Fills the dropdowns (select elements) with data from settings.
- */
 function populateFormDropdowns() {
     const typeOptions = Object.keys(settings.densities).map(t => `<option value="${t}">${t}</option>`).join('');
     const featureOptions = settings.features.map(f => `<option value="${f}">${f}</option>`).join('');
@@ -959,21 +985,14 @@ function populateFormDropdowns() {
     document.getElementById('sheetType').innerHTML = typeOptions;
 
     const prefixTypeSelect = document.getElementById('newPrefixType');
-    if (prefixTypeSelect) {
-        prefixTypeSelect.innerHTML = typeOptions;
-    }
+    if (prefixTypeSelect) prefixTypeSelect.innerHTML = typeOptions;
 
     const prefixFeatureSelect = document.getElementById('newPrefixFeature');
-    if (prefixFeatureSelect) {
-        prefixFeatureSelect.innerHTML = featureOptions;
-    }
+    if (prefixFeatureSelect) prefixFeatureSelect.innerHTML = featureOptions;
 }
 
 // --- EVENT LISTENER BINDING ---
 
-/**
- * Central function to bind all static event listeners.
- */
 function bindEventListeners() {
     // Logo and Modal Triggers
     document.getElementById('logoAbout').addEventListener('click', showAboutModal);
@@ -982,9 +1001,7 @@ function bindEventListeners() {
 
     // Modal Close Buttons
     document.querySelectorAll('[data-modal-close]').forEach(btn => {
-        btn.addEventListener('click', () => {
-            btn.closest('.modal').style.display = 'none';
-        });
+        btn.addEventListener('click', () => btn.closest('.modal').style.display = 'none');
     });
     document.getElementById('helpModalCloseBtn').addEventListener('click', closeHelpModal);
 
@@ -1036,10 +1053,6 @@ function bindEventListeners() {
 
 // --- PDF & PRINTING ---
 
-/**
- * Prepares the results for printing by adding a title and then calling window.print().
- * This function now includes a fix to prevent content from being cut off.
- */
 function printResults() {
     const mainContainer = document.getElementById('mainContainer');
     const resultsContainer = document.getElementById('resultsContainer');
@@ -1049,41 +1062,27 @@ function printResults() {
     printTitle.className = 'pdf-only-title';
     resultsContainer.prepend(printTitle);
 
-    // --- FIX FOR PRINT LAYOUT ---
-    // Store original styles to restore them after printing.
     const originalMaxWidth = mainContainer.style.maxWidth;
     const originalOverflow = mainContainer.style.overflow;
 
-    // Temporarily remove style constraints that interfere with browser's print rendering.
     mainContainer.style.maxWidth = 'none';
     mainContainer.style.overflow = 'visible';
     
-    // A cleanup function to restore everything after printing.
     const cleanupAfterPrint = () => {
-        // Restore original styles to the container.
         mainContainer.style.maxWidth = originalMaxWidth;
         mainContainer.style.overflow = originalOverflow;
         
-        // Remove the temporary title.
         if (resultsContainer.contains(printTitle)) {
             resultsContainer.removeChild(printTitle);
         }
         
-        // Remove the event listener itself to prevent it from firing again.
         window.removeEventListener('afterprint', cleanupAfterPrint);
     };
     
-    // Listen for the 'afterprint' event to run the cleanup.
     window.addEventListener('afterprint', cleanupAfterPrint);
-
-    // Trigger the browser's native print dialog.
     window.print();
 }
 
-
-/**
- * Exports the content of the results container to a PDF file, handling overflow and scroll issues.
- */
 function exportResultsToPDF() {
     const mainContainer = document.getElementById('mainContainer');
     const resultsContainer = document.getElementById('resultsContainer');
@@ -1115,7 +1114,6 @@ function exportResultsToPDF() {
     pdfTitle.style.marginBottom = '20px';
     resultsContainer.prepend(pdfTitle);
 
-    // ===== CRITICAL FIX: Scroll to top and temporarily remove overflow limits =====
     window.scrollTo(0, 0);
     mainContainer.style.overflow = 'visible';
     body.style.overflow = 'visible';
@@ -1128,7 +1126,6 @@ function exportResultsToPDF() {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
-    // Use a small timeout to ensure the browser has processed the scroll and style changes
     setTimeout(() => {
         html2pdf().from(resultsContainer).set(opt).save().then(() => {
             restoreOriginalStyles(pdfTitle);
@@ -1304,9 +1301,7 @@ function isFeatureInUse(featureName) {
 // --- UI & NAVIGATION ---
 function updateLogoVisibility() {
     const logo = document.getElementById('aabsalLogo');
-    if (logo) {
-        logo.style.display = settings.showAabsalLogo ? 'block' : 'none';
-    }
+    if (logo) logo.style.display = settings.showAabsalLogo ? 'block' : 'none';
 }
 
 function showPage(pageId) {
@@ -1340,9 +1335,7 @@ function showSettingsPage() {
     document.getElementById('settings-section').style.display = 'none';
     
     const advancedFields = document.getElementById('advanced-settings-fields');
-    if (advancedFields) {
-        advancedFields.style.display = 'none';
-    }
+    if (advancedFields) advancedFields.style.display = 'none';
 }
 
 // --- BULK ACTIONS ---
@@ -1410,13 +1403,10 @@ function saveDataToLocalStorage() {
 
 function loadDataFromLocalStorage() {
     const savedCoils = localStorage.getItem(COILS_STORAGE_KEY);
+    if (savedCoils) coils = JSON.parse(savedCoils);
+
     const savedOrders = localStorage.getItem(ORDERS_STORAGE_KEY);
-    if (savedCoils) {
-        coils = JSON.parse(savedCoils);
-    }
-    if (savedOrders) {
-        sheetOrders = JSON.parse(savedOrders);
-    }
+    if (savedOrders) sheetOrders = JSON.parse(savedOrders);
 }
 
 // --- DYNAMIC FORM LOGIC ---
@@ -1446,18 +1436,14 @@ function updateCoilFeatureDropdown() {
 }
 
 function updateCompanyCodePrefix(formType) {
-    if (formType !== 'coil') {
-        return;
-    }
+    if (formType !== 'coil') return;
 
     const type = document.getElementById(`coilType`).value;
     const feature = document.getElementById(`coilFeature`).value;
     const prefixSpan = document.getElementById(`coilCodePrefix`);
 
     if (!type || !feature || !prefixSpan) {
-        if(prefixSpan) {
-            prefixSpan.textContent = '----';
-        }
+        if(prefixSpan) prefixSpan.textContent = '----';
         return;
     }
 
@@ -1483,24 +1469,15 @@ function exportToXLSX(type) {
                 displayCodeForExport = prefix + suffix;
             }
             return {
-                'کد انبار': displayCodeForExport, 
-                'نوع': c.type, 
-                'ویژگی': c.feature,
-                'وزن': c.originalWeight, 
-                'عرض': c.width, 
-                'ضخامت': c.thickness, 
-                'دانسیته': c.density
+                'کد انبار': displayCodeForExport, 'نوع': c.type, 'ویژگی': c.feature,
+                'وزن': c.originalWeight, 'عرض': c.width, 'ضخامت': c.thickness
             };
         });
         filename = "coils-export.xlsx";
     } else {
         data = sheetOrders.map(s => ({
-            'کد انبار': s.companyCode, 
-            'نوع': s.type, 
-            'ویژگی': s.feature,
-            'طول': s.length, 
-            'عرض': s.width, 
-            'ضخامت': s.thickness
+            'کد انبار': s.companyCode, 'نوع': s.type, 'ویژگی': s.feature,
+            'طول': s.length, 'عرض': s.width, 'ضخامت': s.thickness
         }));
         filename = "sheets-export.xlsx";
     }
@@ -1542,108 +1519,224 @@ function importFromXLSX(type) {
 }
 
 function processImportedCoils(data, replace) {
-    if (replace) {
-        coils = [];
-    }
-    let importedCount = 0, skippedCount = 0;
-    let skippedReasons = [];
-    
+    const errors = [];
+    const validatedCoils = [];
+    const existingCompanyCodes = new Set(coils.map(c => c.companyCode));
+
     data.forEach((row, index) => {
-        const exportedCode = row['کد انبار']?.toString().trim();
-        let internalCode = exportedCode;
-        if (exportedCode && exportedCode.length === 8) {
+        const rowIndex = index + 2;
+        const validationError = validateImportedCoilRow(row, rowIndex, existingCompanyCodes);
+        
+        if (validationError) {
+            errors.push(validationError);
+        } else {
+            const exportedCode = row['کد انبار'].toString().trim();
             const prefix = exportedCode.substring(0, 4);
             const suffix = exportedCode.substring(4);
-            internalCode = suffix + prefix;
-        }
+            const internalCode = suffix + prefix;
 
-        const newCoil = {
-            companyCode: internalCode, 
-            type: row['نوع']?.trim(), 
-            feature: row['ویژگی']?.toString().trim(),
-            originalWeight: parseFloat(row['وزن']), 
-            width: parseFloat(row['عرض']),
-            thickness: parseFloat(row['ضخامت']), 
-            density: parseFloat(row['دانسیته'])
-        };
-        
-        const validationError = validateImportedCoil(newCoil, index + 2, exportedCode);
-        if(validationError) {
-            skippedCount++;
-            skippedReasons.push(validationError);
-            return;
+            const newCoil = {
+                id: 'C' + Date.now() + Math.random() + index,
+                companyCode: internalCode,
+                type: row['نوع'].trim(),
+                feature: row['ویژگی'].toString().trim(),
+                originalWeight: parseFloat(row['وزن']),
+                width: parseFloat(row['عرض']),
+                thickness: parseFloat(row['ضخامت']),
+                density: settings.densities[row['نوع'].trim()]
+            };
+            newCoil.weight = newCoil.originalWeight;
+            
+            validatedCoils.push(newCoil);
+            existingCompanyCodes.add(newCoil.companyCode);
         }
-
-        newCoil.id = 'C' + Date.now() + Math.random();
-        newCoil.weight = newCoil.originalWeight;
-        coils.push(newCoil);
-        importedCount++;
     });
 
+    if (errors.length > 0) {
+        const errorMessage = `ورود اطلاعات لغو شد. لطفاً خطاهای زیر را در فایل اکسل خود برطرف کنید:\n\n` + errors.join('\n');
+        showAlert(errorMessage);
+        return;
+    }
+    
+    if (validatedCoils.length === 0) {
+        alert("هیچ ردیف جدید و معتبری برای وارد کردن یافت نشد.");
+        return;
+    }
+
+    if (replace) {
+        coils = validatedCoils;
+    } else {
+        coils.push(...validatedCoils);
+    }
+
+    sortCoils();
     renderCoilList();
     saveDataToLocalStorage();
-    let report = `پردازش فایل کویل‌ها کامل شد.\n\nتعداد وارد شده: ${importedCount}\nتعداد نادیده گرفته شده: ${skippedCount}`;
-    if (skippedCount > 0) {
-        report += "\n\nدلایل:\n" + skippedReasons.join("\n");
-    }
-    alert(report);
+    alert(`عملیات با موفقیت انجام شد.\n\nتعداد ${validatedCoils.length} کویل جدید وارد شد.`);
 }
 
-function validateImportedCoil(coil, rowIndex, originalCode) {
-    if (!coil.companyCode || !coil.type || !coil.feature || isNaN(coil.originalWeight) || isNaN(coil.width) || isNaN(coil.thickness) || isNaN(coil.density)) return `ردیف ${rowIndex}: داده‌های ناقص.`;
-    if (!/^\d{8}$/.test(coil.companyCode)) return `ردیف ${rowIndex}: کد انبار کویل (${originalCode}) باید ۸ رقمی باشد.`;
-    if (coil.thickness > 5) return `ردیف ${rowIndex}: ضخامت کویل (${coil.thickness}) بیشتر از حد مجاز (5) است.`;
-    if (!Object.keys(settings.densities).includes(coil.type) || !settings.features.includes(coil.feature)) return `ردیف ${rowIndex}: نوع یا ویژگی تعریف نشده است.`;
-    if (coils.some(c => c.companyCode === coil.companyCode)) return `ردیف ${rowIndex} (${originalCode}): کد انبار تکراری است.`;
-    if (coils.some(c => c.type === coil.type && c.feature === coil.feature && c.width === coil.width && c.thickness === coil.thickness)) return `ردیف ${rowIndex}: کویلی با مشخصات یکسان قبلاً ثبت شده است.`;
+function validateImportedCoilRow(row, rowIndex, existingCompanyCodes) {
+    const companyCode = row['کد انبار']?.toString().trim();
+    const type = row['نوع']?.trim();
+    const feature = row['ویژگی']?.toString().trim();
+    const weight = parseFloat(row['وزن']);
+    const width = parseFloat(row['عرض']);
+    const thickness = parseFloat(row['ضخامت']);
+
+    if (!companyCode || !type || !feature || isNaN(weight) || isNaN(width) || isNaN(thickness)) {
+        return `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، وزن، عرض، ضخامت) باید پر شوند.`;
+    }
+    if (!/^\d{8}$/.test(companyCode)) {
+        return `ردیف ${rowIndex}: کد انبار (${companyCode}) باید یک عدد ۸ رقمی باشد.`;
+    }
+    
+    const prefix = companyCode.substring(0, 4);
+    const suffix = companyCode.substring(4);
+    const internalCode = suffix + prefix;
+    if (existingCompanyCodes.has(internalCode)) {
+         return `ردیف ${rowIndex}: کد انبار (${companyCode}) تکراری است (در فایل یا در برنامه).`;
+    }
+
+    if (!settings.densities[type]) {
+        return `ردیف ${rowIndex}: نوع ورق '${type}' در تنظیمات برنامه تعریف نشده است.`;
+    }
+
+    const typeFeatureKey = `${type}-${feature}`;
+    if (!settings.companyCodePrefixes[typeFeatureKey]) {
+        return `ردیف ${rowIndex}: ترکیب نوع '${type}' با ویژگی '${feature}' در تنظیمات برنامه مجاز نیست.`;
+    }
+
+    if (settings.companyCodePrefixes[typeFeatureKey] !== prefix) {
+        return `ردیف ${rowIndex}: پیش‌کد انبار (${prefix}) برای ترکیب نوع '${type}' و ویژگی '${feature}' صحیح نیست.`;
+    }
+
+    if (width > 2500) {
+        return `ردیف ${rowIndex}: عرض ورق (${width}) نمی‌تواند بیشتر از 2500 میلی‌متر باشد.`;
+    }
+    if (thickness > 7) {
+        return `ردیف ${rowIndex}: ضخامت ورق (${thickness}) نمی‌تواند بیشتر از 7 میلی‌متر باشد.`;
+    }
+    
     return null;
 }
 
+/**
+ * REFACTORED: Processes imported sheet orders with all-or-nothing validation.
+ * First, validates all rows. If any error exists, aborts the import and
+ * shows a consolidated error report. Otherwise, imports all data.
+ * @param {Array} data - Array of row objects from the Excel file.
+ * @param {boolean} replace - Whether to replace or append data.
+ */
 function processImportedSheets(data, replace) {
-    if (replace) {
-        sheetOrders = [];
-    }
-    let importedCount = 0, skippedCount = 0;
-    let skippedReasons = [];
+    const errors = [];
+    const validatedSheets = [];
 
+    // Phase 1: Validate all rows and collect errors or valid data
     data.forEach((row, index) => {
         const newSheet = {
-            companyCode: row['کد انبار']?.toString().trim(), 
-            type: row['نوع']?.trim(), 
+            id: 'S' + Date.now() + Math.random() + index,
+            companyCode: row['کد انبار']?.toString().trim(),
+            type: row['نوع']?.trim(),
             feature: row['ویژگی']?.toString().trim(),
-            length: parseFloat(row['طول']), 
-            width: parseFloat(row['عرض']), 
+            length: parseFloat(row['طول']),
+            width: parseFloat(row['عرض']),
             thickness: parseFloat(row['ضخامت'])
         };
 
-        const validationError = validateImportedSheet(newSheet, index + 2);
-        if(validationError) {
-            skippedCount++;
-            skippedReasons.push(validationError);
-            return;
+        // Pass the array of already validated sheets to check for duplicates within the file
+        const validationError = validateSheetOrderFromImport(newSheet, index + 2, validatedSheets);
+        
+        if (validationError) {
+            errors.push(validationError);
+        } else {
+            validatedSheets.push(newSheet);
         }
-
-        newSheet.id = 'S' + Date.now() + Math.random();
-        sheetOrders.push(newSheet);
-        importedCount++;
     });
 
+    // Phase 2: Decide whether to import or show errors
+    if (errors.length > 0) {
+        const errorMessage = `ورود اطلاعات لغو شد. لطفاً خطاهای زیر را در فایل اکسل خود برطرف کنید:\n\n` + errors.join('\n');
+        showAlert(errorMessage);
+        return;
+    }
+
+    if (validatedSheets.length === 0) {
+        alert("هیچ ردیف جدید و معتبری برای وارد کردن یافت نشد.");
+        return;
+    }
+
+    // Phase 3: Execute the import
+    if (replace) {
+        sheetOrders = validatedSheets;
+    } else {
+        sheetOrders.push(...validatedSheets);
+    }
+
+    sortSheetOrders();
     renderSheetOrderList();
     saveDataToLocalStorage();
-    let report = `پردازش فایل ابعاد کامل شد.\n\nتعداد وارد شده: ${importedCount}\nتعداد نادیده گرفته شده: ${skippedCount}`;
-    if (skippedCount > 0) {
-        report += "\n\nدلایل:\n" + skippedReasons.join("\n");
-    }
-    alert(report);
+    alert(`عملیات با موفقیت انجام شد.\n\nتعداد ${validatedSheets.length} سفارش برش جدید وارد شد.`);
 }
 
-function validateImportedSheet(sheet, rowIndex) {
-    if (!sheet.companyCode || !sheet.type || !sheet.feature || isNaN(sheet.length) || isNaN(sheet.width) || isNaN(sheet.thickness)) return `ردیف ${rowIndex}: داده‌های ناقص.`;
-    if (!/^\d{6,7}$/.test(sheet.companyCode)) return `ردیف ${rowIndex}: کد انبار ورق (${sheet.companyCode}) باید ۶ یا ۷ رقمی باشد.`;
-    if (sheet.width > sheet.length) return `ردیف ${rowIndex}: عرض (${sheet.width}) بیشتر از طول (${sheet.length}) است.`;
-    if (!Object.keys(settings.densities).includes(sheet.type) || !settings.features.includes(sheet.feature)) return `ردیف ${rowIndex}: نوع یا ویژگی تعریف نشده است.`;
-    if (sheetOrders.some(s => s.companyCode === sheet.companyCode)) return `ردیف ${rowIndex} (${sheet.companyCode}): کد انبار تکراری است.`;
-    if (sheetOrders.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width)) return `ردیف ${rowIndex}: ابعاد برشی با مشخصات یکسان قبلاً ثبت شده است.`;
+
+/**
+ * REFACTORED: Validates a single sheet order row from an imported Excel file.
+ * This now includes checking for the existence of a matching coil.
+ * @param {object} sheet - The sheet order object to validate.
+ * @param {number} rowIndex - The row number from the Excel file for error reporting.
+ * @param {Array} newSheetsInBatch - Sheets already validated in the current import batch, to check for intra-file duplicates.
+ * @returns {string|null} An error message string if invalid, or null if valid.
+ */
+function validateSheetOrderFromImport(sheet, rowIndex, newSheetsInBatch) {
+    // 1. Check for data completeness and correct types
+    if (!sheet.companyCode || !sheet.type || !sheet.feature || isNaN(sheet.length) || isNaN(sheet.width) || isNaN(sheet.thickness)) {
+        return `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، طول، عرض، ضخامت) باید پر شوند.`;
+    }
+
+    // 2. Check company code format
+    if (!/^\d{6,7}$/.test(sheet.companyCode)) {
+        return `ردیف ${rowIndex}: کد انبار ورق (${sheet.companyCode}) باید ۶ یا ۷ رقمی باشد.`;
+    }
+
+    // 3. Check dimensions
+    if (sheet.width > sheet.length) {
+        return `ردیف ${rowIndex}: عرض (${sheet.width}) نمی‌تواند بیشتر از طول (${sheet.length}) باشد.`;
+    }
+    
+    // 4. Check for company code uniqueness (against existing data AND this import batch)
+    const isCodeDuplicate = sheetOrders.some(s => s.companyCode === sheet.companyCode) || 
+                            newSheetsInBatch.some(s => s.companyCode === sheet.companyCode);
+    if (isCodeDuplicate) {
+        return `ردیف ${rowIndex}: کد انبار (${sheet.companyCode}) تکراری است (در برنامه یا در خود فایل اکسل).`;
+    }
+    
+    // 5. Check for full specification uniqueness
+    const isSpecDuplicate = sheetOrders.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width) ||
+                              newSheetsInBatch.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width);
+    if (isSpecDuplicate) {
+        return `ردیف ${rowIndex}: ابعاد برشی با مشخصات یکسان قبلاً ثبت شده یا در فایل اکسل تکرار شده است.`;
+    }
+    
+    // 6. Check that Type and Feature are defined in settings
+    if (!Object.keys(settings.densities).includes(sheet.type)) {
+        return `ردیف ${rowIndex}: نوع ورق '${sheet.type}' در تنظیمات برنامه تعریف نشده است.`;
+    }
+    if (!settings.features.includes(sheet.feature)) {
+        return `ردیف ${rowIndex}: ویژگی '${sheet.feature}' در تنظیمات برنامه تعریف نشده است.`;
+    }
+
+    // 7. CRITICAL CHECK: Ensure a matching coil exists
+    const hasMatchingCoil = coils.some(coil => 
+        coil.type === sheet.type &&
+        coil.feature === sheet.feature &&
+        coil.thickness === sheet.thickness
+    );
+
+    if (!hasMatchingCoil) {
+        return `ردیف ${rowIndex}: هیچ کویلی با مشخصات (نوع: '${sheet.type}', ویژگی: '${sheet.feature}', ضخامت: ${sheet.thickness}) یافت نشد.`;
+    }
+
+    // If all checks pass
     return null;
 }
 
@@ -1676,8 +1769,12 @@ function saveCoil() {
         showAlert('لطفاً تمام مشخصات کویل را با مقادیر مثبت وارد کنید.');
         return;
     }
-    if (thickness > 5) {
-        showAlert('ضخامت کویل نباید بیشتر از 5 میلی‌متر باشد.');
+    if (width > 2500) {
+        showAlert('عرض کویل نمی‌تواند بیشتر از 2500 میلی‌متر باشد.');
+        return;
+    }
+    if (thickness > 7) {
+        showAlert('ضخامت کویل نباید بیشتر از 7 میلی‌متر باشد.');
         return;
     }
     if (coils.some(c => c.id !== editingCoilId && c.companyCode === companyCode)) {
@@ -1699,6 +1796,7 @@ function saveCoil() {
     }
     
     editingCoilId = null;
+    sortCoils();
     resetCoilForm();
     renderCoilList();
     saveDataToLocalStorage();
@@ -1706,9 +1804,7 @@ function saveCoil() {
 
 function editCoil(id) {
     const coilToEdit = coils.find(c => c.id === id);
-    if (!coilToEdit) {
-        return;
-    }
+    if (!coilToEdit) return;
 
     editingCoilId = id;
     document.getElementById('coilType').value = coilToEdit.type;
@@ -1857,6 +1953,7 @@ function saveSheetOrder() {
     }
     
     editingSheetId = null;
+    sortSheetOrders();
     resetSheetForm();
     renderSheetOrderList();
     saveDataToLocalStorage();
@@ -1864,9 +1961,7 @@ function saveSheetOrder() {
 
 function editSheetOrder(id) {
     const orderToEdit = sheetOrders.find(s => s.id === id);
-    if (!orderToEdit) {
-        return;
-    }
+    if (!orderToEdit) return;
 
     editingSheetId = id;
     document.getElementById('sheetType').value = orderToEdit.type;
@@ -2005,49 +2100,31 @@ function renderSheetOrderList() {
 // --- EVENT DELEGATION HANDLERS ---
 function handleCoilListActions(event) {
     const target = event.target.closest('button');
-    if (!target) {
-        return;
-    }
+    if (!target) return;
     
     const { action, id } = target.dataset;
-    if (action === 'edit') {
-        editCoil(id);
-    } else if (action === 'delete') {
-        deleteCoil(id);
-    }
+    if (action === 'edit') editCoil(id);
+    else if (action === 'delete') deleteCoil(id);
 }
 
 function handleSheetOrderListActions(event) {
     const target = event.target.closest('button');
-    if (!target) {
-        return;
-    }
+    if (!target) return;
 
     const { action, id } = target.dataset;
-    if (action === 'edit') {
-        editSheetOrder(id);
-    } else if (action === 'delete') {
-        deleteSheetOrder(id);
-    }
+    if (action === 'edit') editSheetOrder(id);
+    else if (action === 'delete') deleteSheetOrder(id);
 }
 
 function handleSettingsListActions(event) {
     const target = event.target.closest('button[data-action]');
-    if (!target) {
-        return;
-    }
+    if (!target) return;
 
     const { action, key } = target.dataset;
     switch(action) {
-        case 'delete-type':
-            deleteSettingType(key);
-            break;
-        case 'delete-feature':
-            deleteSettingFeature(key);
-            break;
-        case 'delete-prefix':
-            deleteSettingPrefix(key);
-            break;
+        case 'delete-type': deleteSettingType(key); break;
+        case 'delete-feature': deleteSettingFeature(key); break;
+        case 'delete-prefix': deleteSettingPrefix(key); break;
     }
 }
 
@@ -2069,22 +2146,18 @@ function runOptimization() {
     setTimeout(() => {
         const availableCoils = JSON.parse(JSON.stringify(coils));
         const pendingOrders = JSON.parse(JSON.stringify(sheetOrders));
-        resultsContainer.innerHTML = '<h2>نتایج: تمام طرح‌های برش ممکن</h2>'; // Clear "Processing..."
+        resultsContainer.innerHTML = '<h2>نتایج: تمام طرح‌های برش ممکن</h2>';
 
         const groupKey = (item) => `${item.type}-${item.feature}-${item.thickness}`;
         const groupedCoils = availableCoils.reduce((acc, coil) => { 
             const key = groupKey(coil); 
-            if (!acc[key]) {
-                acc[key] = [];
-            }
+            if (!acc[key]) acc[key] = [];
             acc[key].push(coil); 
             return acc; 
         }, {});
         const groupedOrders = pendingOrders.reduce((acc, order) => { 
             const key = groupKey(order); 
-            if (!acc[key]) {
-                acc[key] = [];
-            }
+            if (!acc[key]) acc[key] = [];
             acc[key].push(order); 
             return acc; 
         }, {});
@@ -2204,9 +2277,7 @@ function findAllWidthPatterns(orders, coilWidth) {
 }
 
 function calculateCoilLength(coil) {
-    if (coil.weight <= 0) {
-        return 0;
-    }
+    if (coil.weight <= 0) return 0;
     const coilVolCm3 = (coil.weight * 1000) / coil.density;
     const lengthMm = (coilVolCm3 / ((coil.thickness / 10) * (coil.width / 10))) * 10;
     return lengthMm;
@@ -2214,7 +2285,6 @@ function calculateCoilLength(coil) {
 
 function createPlanCard(plan) {
     const card = document.createElement('div');
-    // REMOVED: Inline style was removed from here and moved to CSS.
     card.className = 'result-card';
     
     const { coil, pattern, wastePercentage, cutsPossible } = plan;
@@ -2238,13 +2308,21 @@ function createPlanCard(plan) {
             <span style="color: ${wastePercentage > 10 ? '#dc3545' : '#28a745'}; font-weight: bold;">ضایعات: ${wastePercentage.toFixed(2)}%</span>
         </h4>
         <p><strong>الگوی ترکیبی پیشنهادی (در هر تکرار):</strong></p>
-        <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">${sheetListHtml}</ul>
-        <p>این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.</p>
-        <p>این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.</p>
+        <ul style="padding-right: 20px; margin-top: 5px; margin-bottom: 10px;">
+            ${sheetListHtml}
+        </ul>
+        <p>
+            این الگو <strong>${pattern.totalWidth} میلی‌متر</strong> از عرض کویل را اشغال می‌کند و هر تکرار آن به نواری به طول <strong>${pattern.cutLength} میلی‌متر</strong> نیاز دارد.
+        </p>
+        <p>
+            این الگو می‌تواند <strong>${cutsPossible}</strong> بار در طول کویل تکرار شود.
+        </p>
         <hr>
         <div style="font-size: 1.1em; color: #333;">
             <p style="font-weight: bold; text-align: center; margin-bottom: 10px;">تعداد کل ورق‌های بدست آمده از این طرح:</p>
-            <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">${summaryHtml}</ul>
+            <ul style="padding-right: 20px; list-style-type: disc; margin: 0; line-height: 1.8;">
+                ${summaryHtml}
+            </ul>
         </div>
     `;
     return card;
