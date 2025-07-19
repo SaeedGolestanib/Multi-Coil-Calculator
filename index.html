@@ -522,7 +522,7 @@
 
 <script>
 // =================================================================================
-// REFACTORED SCRIPT - V2.9.3
+// REFACTORED SCRIPT - V2.9.2
 // Changes:
 // 1. Implemented "All-or-Nothing" import logic for Sheet Orders from Excel.
 // 2. The system now validates the entire Excel file first.
@@ -536,7 +536,7 @@
 
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '2.9.3';
+const APP_VERSION = '2.9.2';
 let coils = [];
 let sheetOrders = [];
 let editingCoilId = null;
@@ -832,10 +832,6 @@ function buildPageHTML() {
                     <label for="sheetWidth">عرض ورق (م.م):</label>
                     <input type="number" id="sheetWidth" placeholder="مثال: 1000">
                 </div>
-                <div class="input-item">
-                    <label for="maxWaste">حداکثر ضایعات مجاز (%):</label>
-                    <input type="number" id="maxWaste" min="0" max="100" value="5" placeholder="0-100">
-                </div>
             </div>
             <div class="form-buttons-container">
                 <button id="sheetSubmitBtn" class="btn btn-primary">افزودن ابعاد</button>
@@ -850,6 +846,10 @@ function buildPageHTML() {
                     <button id="btnImportSheets" class="btn btn-primary">ورود از Excel</button>
                     <button id="btnExportSheets" class="btn btn-success">خروجی به Excel</button>
                     <button id="btnClearSheets" class="btn btn-danger">پاک کردن همه</button>
+                    <div class="input-item" style="max-width: 180px;">
+                        <label for="maxWaste" style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">حداکثر ضایعات مجاز (%):</label>
+                        <input type="number" id="maxWaste" min="0" max="100" value="5" placeholder="0-100" tabindex="-1" style="font-size: 14px; padding: 7px 10px;">
+                    </div>
                     <button id="btnRunOptimization" class="btn btn-success btn-main-action">نمایش طرح‌های ممکن</button>
                 </div>
             </div>
