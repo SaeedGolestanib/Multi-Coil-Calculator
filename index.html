@@ -481,6 +481,7 @@
                 <p><strong>برای کویل‌ها (کد انبار ۸ رقمی):</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>وزن</code>, <code>عرض</code>, <code>ضخامت</code></p>
                 <p><strong>برای ابعاد برش (کد انبار ۶ یا ۷ رقمی):</strong> <code>کد انبار</code>, <code>نوع</code>, <code>ویژگی</code>, <code>طول</code>, <code>عرض</code>, <code>ضخامت</code></p>
                 <p><strong>فیلتر هنگام ورود داده از اکسل:</strong> پس از اعتبارسنجی کامل فایل اکسل، یک پنجره باز می‌شود که به شما اجازه می‌دهد بر اساس مقادیر موجود در **همان فایل**، داده‌های ورودی را فیلتر کنید. تمام فیلترها به صورت هوشمند و زنجیروار بر اساس انتخاب‌های قبلی به‌روز می‌شوند.</p>
+                 <p><strong>نادیده گرفتن ردیف‌های تکراری:</strong> اگر در فایل اکسل ردیفی وجود داشته باشد که از قبل در برنامه ثبت شده یا در خود فایل تکرار شده باشد، برنامه به صورت خودکار آن را نادیده گرفته و در پایان عملیات، تعداد موارد نادیده گرفته شده را به شما اطلاع می‌دهد.</p>
                 <div style="text-align: center; margin-top: 25px;">
                     <button class="btn btn-primary" id="helpModalCloseBtn">متوجه شدم</button>
                 </div>
@@ -535,18 +536,21 @@
 
 <script>
 // =================================================================================
-// SCRIPT VERSION: 3.2.2
+// SCRIPT VERSION: 3.3.0
 // Author: Saeed Golestani
-// Date: 2024-07-13
+// Date: 2024-07-14
 // Changes:
-// 1. Fixed import validation logic. The check for duplicates against existing data
-//    is now skipped when the user chooses to "replace" (OK button).
-// 2. This ensures the "replace" and "append" (Cancel button) options in the
-//    import confirm dialog work as intended.
+// 1. Refactored Excel import logic to handle duplicate rows gracefully.
+// 2. Instead of stopping the import, duplicate rows (based on code or specs)
+//    are now skipped.
+// 3. A summary message is shown at the end of the import, indicating how many
+//    new items were added and how many duplicates were ignored.
+// 4. Validation functions now only check for fatal errors, while duplicate
+//    checking is handled within the main processing loops.
 // =================================================================================
 
 // --- GLOBAL VARIABLES & CONSTANTS ---
-const APP_VERSION = '3.2.2';
+const APP_VERSION = '3.3.0';
 const COILS_STORAGE_KEY = 'cuttingOptimizerCoils_v30';
 const ORDERS_STORAGE_KEY = 'cuttingOptimizerOrders_v30';
 const SETTINGS_STORAGE_KEY = 'cuttingOptimizerSettings_v30';
@@ -581,7 +585,7 @@ let settings = {
         'استیل-کششی': '0632',
         'استیل-روکش دار': '0632'
     },
-    expireDate: '2026-12-31',
+    expireDate: '2025-12-31',
     showAabsalLogo: true 
 };
 
@@ -1563,56 +1567,120 @@ function importFromXLSX(type) {
 }
 
 /**
- * Processes imported coils with validation and a cascading filtering step.
+ * Validates a single coil row from an Excel file for FATAL errors only.
+ * Duplicate checks are handled in the calling function.
+ * @param {object} row - The row object from the Excel file.
+ * @param {number} rowIndex - The row number for error reporting.
+ * @returns {string|null} An error message string if a fatal error is found, otherwise null.
+ */
+function validateImportedCoilRow(row, rowIndex) {
+    const companyCode = row['کد انبار']?.toString().trim();
+    const type = row['نوع']?.trim();
+    const feature = row['ویژگی']?.toString().trim();
+    const weight = parseFloat(row['وزن']);
+    const width = parseFloat(row['عرض']);
+    const thickness = parseFloat(row['ضخامت']);
+
+    if (!companyCode || !type || !feature || isNaN(weight) || isNaN(width) || isNaN(thickness)) {
+        return `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، وزن، عرض، ضخامت) باید پر شوند.`;
+    }
+    if (!/^\d{8}$/.test(companyCode)) {
+        return `ردیف ${rowIndex}: کد انبار (${companyCode}) باید یک عدد ۸ رقمی باشد.`;
+    }
+
+    if (!settings.densities[type]) {
+        return `ردیف ${rowIndex}: نوع ورق '${type}' در تنظیمات برنامه تعریف نشده است.`;
+    }
+
+    const typeFeatureKey = `${type}-${feature}`;
+    if (!settings.companyCodePrefixes[typeFeatureKey]) {
+        return `ردیف ${rowIndex}: ترکیب نوع '${type}' با ویژگی '${feature}' در تنظیمات برنامه مجاز نیست.`;
+    }
+
+    const prefixFromFile = companyCode.substring(0, 4);
+    if (settings.companyCodePrefixes[typeFeatureKey] !== prefixFromFile) {
+        return `ردیف ${rowIndex}: پیش‌کد انبار (${prefixFromFile}) برای ترکیب نوع '${type}' و ویژگی '${feature}' صحیح نیست.`;
+    }
+
+    if (width > 2500) {
+        return `ردیف ${rowIndex}: عرض ورق (${width}) نمی‌تواند بیشتر از 2500 میلی‌متر باشد.`;
+    }
+    if (thickness > 7) {
+        return `ردیف ${rowIndex}: ضخامت ورق (${thickness}) نمی‌تواند بیشتر از 7 میلی‌متر باشد.`;
+    }
+    
+    return null; // No fatal errors
+}
+
+/**
+ * Processes imported coils, handles duplicates gracefully, and then shows a filter modal.
  * @param {Array<Object>} data - Array of row objects from the Excel file.
  * @param {boolean} replace - Whether to replace or append data.
  */
 function processImportedCoils(data, replace) {
-    // Phase 1: Full Validation
-    const errors = [];
+    const fatalErrors = [];
     const validatedCoils = [];
-    
+    let ignoredDuplicateCount = 0;
+    const processedCodes = new Set();
+
+    // If appending, pre-load existing codes to check against
+    if (!replace) {
+        coils.forEach(c => processedCodes.add(c.companyCode));
+    }
+
     data.forEach((row, index) => {
         const rowIndex = index + 2;
-        // Pass the 'replace' flag to the validation function
-        const validationError = validateImportedCoilRow(row, rowIndex, validatedCoils, replace);
         
+        // First, check for fatal errors.
+        const validationError = validateImportedCoilRow(row, rowIndex);
         if (validationError) {
-            errors.push(validationError);
-        } else {
-            const exportedCode = row['کد انبار'].toString().trim();
-            const prefix = exportedCode.substring(0, 4);
-            const suffix = exportedCode.substring(4);
-            const internalCode = suffix + prefix;
-
-            const newCoil = {
-                id: 'C' + Date.now() + Math.random() + index,
-                companyCode: internalCode,
-                type: row['نوع'].trim(),
-                feature: row['ویژگی'].toString().trim(),
-                originalWeight: parseFloat(row['وزن']),
-                width: parseFloat(row['عرض']),
-                thickness: parseFloat(row['ضخامت']),
-                density: settings.densities[row['نوع'].trim()]
-            };
-            newCoil.weight = newCoil.originalWeight;
-            
-            validatedCoils.push(newCoil);
+            fatalErrors.push(validationError);
+            return; // Skip to the next row in the forEach loop
         }
+
+        const exportedCode = row['کد انبار'].toString().trim();
+        const prefix = exportedCode.substring(0, 4);
+        const suffix = exportedCode.substring(4);
+        const internalCode = suffix + prefix;
+
+        // Now, check for duplicates (non-fatal).
+        if (processedCodes.has(internalCode)) {
+            ignoredDuplicateCount++;
+            return; // Skip this duplicate row
+        }
+
+        // If we reach here, the row is valid and not a duplicate.
+        processedCodes.add(internalCode);
+        const newCoil = {
+            id: 'C' + Date.now() + Math.random() + index,
+            companyCode: internalCode,
+            type: row['نوع'].trim(),
+            feature: row['ویژگی'].toString().trim(),
+            originalWeight: parseFloat(row['وزن']),
+            width: parseFloat(row['عرض']),
+            thickness: parseFloat(row['ضخامت']),
+            density: settings.densities[row['نوع'].trim()]
+        };
+        newCoil.weight = newCoil.originalWeight;
+        validatedCoils.push(newCoil);
     });
 
-    if (errors.length > 0) {
-        const errorMessage = `ورود اطلاعات لغو شد. لطفاً خطاهای زیر را در فایل اکسل خود برطرف کنید:\n\n` + errors.join('\n');
+    if (fatalErrors.length > 0) {
+        const errorMessage = `ورود اطلاعات لغو شد. لطفاً خطاهای اساسی زیر را در فایل اکسل خود برطرف کنید:\n\n` + fatalErrors.join('\n');
         showAlert(errorMessage);
         return;
     }
     
     if (validatedCoils.length === 0) {
-        alert("هیچ ردیف جدید و معتبری برای وارد کردن یافت نشد.");
+        let message = "هیچ ردیف جدید و معتبری برای وارد کردن یافت نشد.";
+        if (ignoredDuplicateCount > 0) {
+            message += `\n\nتعداد ${ignoredDuplicateCount} ردیف تکراری نادیده گرفته شد.`;
+        }
+        alert(message);
         return;
     }
 
-    // Phase 2: Prepare and Show Filter Modal
+    // Proceed to the filtering step with only the valid, non-duplicate data.
     tempImportData = validatedCoils;
     setupCoilImportFilters();
     
@@ -1624,7 +1692,6 @@ function processImportedCoils(data, replace) {
     applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
 
     newApplyBtn.onclick = () => {
-        // Phase 3: Apply Filters and Finalize Import
         const selectedTypes = getSelectedFilterValues('filter-types-container');
         const selectedFeatures = getSelectedFilterValues('filter-features-container');
         const selectedThicknesses = getSelectedFilterValues('filter-thicknesses-container').map(t => parseFloat(t));
@@ -1656,70 +1723,72 @@ function processImportedCoils(data, replace) {
         sortCoils();
         renderCoilList();
         saveDataToLocalStorage();
-        alert(`عملیات با موفقیت انجام شد.\n\nتعداد ${finalCoilsToImport.length} کویل جدید وارد شد.`);
+        
+        let successMessage = `عملیات با موفقیت انجام شد.\n\nتعداد ${finalCoilsToImport.length} کویل جدید وارد شد.`;
+        if (ignoredDuplicateCount > 0) {
+            successMessage += `\n\nتوجه: ${ignoredDuplicateCount} ردیف تکراری نادیده گرفته شد.`;
+        }
+        alert(successMessage);
     };
 }
 
-
-function validateImportedCoilRow(row, rowIndex, newCoilsInBatch, replace) {
-    const companyCode = row['کد انبار']?.toString().trim();
-    const type = row['نوع']?.trim();
-    const feature = row['ویژگی']?.toString().trim();
-    const weight = parseFloat(row['وزن']);
-    const width = parseFloat(row['عرض']);
-    const thickness = parseFloat(row['ضخامت']);
-
-    if (!companyCode || !type || !feature || isNaN(weight) || isNaN(width) || isNaN(thickness)) {
-        return `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، وزن، عرض، ضخامت) باید پر شوند.`;
+/**
+ * Validates a single sheet order row from an Excel file for FATAL or IGNORABLE errors.
+ * @param {object} sheet - The sheet order object to validate.
+ * @param {number} rowIndex - The row number for error reporting.
+ * @returns {object} An object like { type: 'valid' | 'fatal' | 'ignore', message: '...' }
+ */
+function validateSheetOrderFromImport(sheet, rowIndex) {
+    if (!sheet.companyCode || !sheet.type || !sheet.feature || isNaN(sheet.length) || isNaN(sheet.width) || isNaN(sheet.thickness)) {
+        return { type: 'fatal', message: `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، طول، عرض، ضخامت) باید پر شوند.` };
     }
-    if (!/^\d{8}$/.test(companyCode)) {
-        return `ردیف ${rowIndex}: کد انبار (${companyCode}) باید یک عدد ۸ رقمی باشد.`;
+    if (!/^\d{6,7}$/.test(sheet.companyCode)) {
+        return { type: 'fatal', message: `ردیف ${rowIndex}: کد انبار ورق (${sheet.companyCode}) باید ۶ یا ۷ رقمی باشد.` };
     }
-    
-    const prefix = companyCode.substring(0, 4);
-    const suffix = companyCode.substring(4);
-    const internalCode = suffix + prefix;
-
-    // ** FIX: Only check for duplicates in existing data if we are APPENDING (replace is false) **
-    const isDuplicateInExistingData = !replace && coils.some(c => c.companyCode === internalCode);
-    const isDuplicateInThisBatch = newCoilsInBatch.some(c => c.companyCode === internalCode);
-    
-    if (isDuplicateInExistingData || isDuplicateInThisBatch) {
-         return `ردیف ${rowIndex}: کد انبار (${companyCode}) تکراری است (در برنامه یا در خود فایل اکسل).`;
+    if (sheet.width > sheet.length) {
+        return { type: 'fatal', message: `ردیف ${rowIndex}: عرض (${sheet.width}) نمی‌تواند بیشتر از طول (${sheet.length}) باشد.` };
     }
-
-    if (!settings.densities[type]) {
-        return `ردیف ${rowIndex}: نوع ورق '${type}' در تنظیمات برنامه تعریف نشده است.`;
+    if (!Object.keys(settings.densities).includes(sheet.type)) {
+        return { type: 'fatal', message: `ردیف ${rowIndex}: نوع ورق '${sheet.type}' در تنظیمات برنامه تعریف نشده است.` };
     }
-
-    const typeFeatureKey = `${type}-${feature}`;
-    if (!settings.companyCodePrefixes[typeFeatureKey]) {
-        return `ردیف ${rowIndex}: ترکیب نوع '${type}' با ویژگی '${feature}' در تنظیمات برنامه مجاز نیست.`;
+    if (!settings.features.includes(sheet.feature)) {
+        return { type: 'fatal', message: `ردیف ${rowIndex}: ویژگی '${sheet.feature}' در تنظیمات برنامه تعریف نشده است.` };
+    }
+    const hasMatchingCoil = coils.some(coil => 
+        coil.type === sheet.type &&
+        coil.feature === sheet.feature &&
+        coil.thickness === sheet.thickness
+    );
+    if (!hasMatchingCoil) {
+        // This is an ignorable warning, not a fatal error.
+        return { type: 'ignore', message: `ردیف ${rowIndex}: کویل منطبق یافت نشد.` };
     }
 
-    if (settings.companyCodePrefixes[typeFeatureKey] !== prefix) {
-        return `ردیف ${rowIndex}: پیش‌کد انبار (${prefix}) برای ترکیب نوع '${type}' و ویژگی '${feature}' صحیح نیست.`;
-    }
-
-    if (width > 2500) {
-        return `ردیف ${rowIndex}: عرض ورق (${width}) نمی‌تواند بیشتر از 2500 میلی‌متر باشد.`;
-    }
-    if (thickness > 7) {
-        return `ردیف ${rowIndex}: ضخامت ورق (${thickness}) نمی‌تواند بیشتر از 7 میلی‌متر باشد.`;
-    }
-    
-    return null;
+    return { type: 'valid' }; // No fatal errors found
 }
 
+
 /**
- * Processes imported sheet orders. Now ignores rows without a matching coil.
+ * Processes imported sheet orders, handles duplicates and non-matching coils gracefully.
  * @param {Array<Object>} data - Array of row objects from the Excel file.
  * @param {boolean} replace - Whether to replace or append data.
  */
 function processImportedSheets(data, replace) {
-    const validatedSheets = [];
-    let ignoredRowsCount = 0;
     const fatalErrors = [];
+    const validatedSheets = [];
+    let ignoredNoCoilCount = 0;
+    let ignoredDuplicateCount = 0;
+    const processedCodes = new Set();
+    const processedSpecs = new Set();
+
+    // If appending, pre-load existing identifiers to check against
+    if (!replace) {
+        sheetOrders.forEach(s => {
+            processedCodes.add(s.companyCode);
+            const specSignature = `${s.type}-${s.feature}-${s.thickness}-${s.length}-${s.width}`;
+            processedSpecs.add(specSignature);
+        });
+    }
 
     data.forEach((row, index) => {
         const rowIndex = index + 2;
@@ -1732,23 +1801,31 @@ function processImportedSheets(data, replace) {
             width: parseFloat(row['عرض']),
             thickness: parseFloat(row['ضخامت'])
         };
-        // Pass the 'replace' flag to the validation function
-        const validationResult = validateSheetOrderFromImport(newSheet, rowIndex, validatedSheets, replace);
 
-        if (validationResult === null) {
-            validatedSheets.push(newSheet);
-        } else {
-            // Check if the error is the one we want to ignore (non-fatal)
-            if (validationResult.includes('هیچ کویلی با مشخصات')) {
-                ignoredRowsCount++; // Simply count it and move on
-            } else {
-                // It's a different, fatal error. Store it.
-                fatalErrors.push(validationResult);
-            }
+        const validationResult = validateSheetOrderFromImport(newSheet, rowIndex);
+
+        if (validationResult.type === 'fatal') {
+            fatalErrors.push(validationResult.message);
+            return; // Skip to next row
         }
+        if (validationResult.type === 'ignore') {
+            ignoredNoCoilCount++;
+            return; // Skip to next row
+        }
+
+        // Check for duplicates (non-fatal)
+        const specSignature = `${newSheet.type}-${newSheet.feature}-${newSheet.thickness}-${newSheet.length}-${newSheet.width}`;
+        if (processedCodes.has(newSheet.companyCode) || processedSpecs.has(specSignature)) {
+            ignoredDuplicateCount++;
+            return; // Skip this duplicate row
+        }
+
+        // If valid and not a duplicate
+        processedCodes.add(newSheet.companyCode);
+        processedSpecs.add(specSignature);
+        validatedSheets.push(newSheet);
     });
 
-    // If there were any fatal errors, stop the entire import process.
     if (fatalErrors.length > 0) {
         const errorMessage = `ورود اطلاعات لغو شد. لطفاً خطاهای اساسی زیر را در فایل اکسل خود برطرف کنید:\n\n` + fatalErrors.join('\n');
         showAlert(errorMessage);
@@ -1757,14 +1834,17 @@ function processImportedSheets(data, replace) {
 
     if (validatedSheets.length === 0) {
         let message = "هیچ ردیف جدید و معتبری برای وارد کردن یافت نشد.";
-        if (ignoredRowsCount > 0) {
-            message += `\n\n${ignoredRowsCount} ردیف به دلیل عدم وجود کویل منطبق نادیده گرفته شدند.`;
+        let details = [];
+        if (ignoredDuplicateCount > 0) details.push(`${ignoredDuplicateCount} ردیف تکراری`);
+        if (ignoredNoCoilCount > 0) details.push(`${ignoredNoCoilCount} ردیف بدون کویل منطبق`);
+        if (details.length > 0) {
+            message += `\n\n(دلایل: ${details.join(' و ')} نادیده گرفته شدند.)`;
         }
         alert(message);
         return;
     }
 
-    // Phase 2: Prepare and Show Filter Modal with only the valid sheets
+    // Proceed to the filtering step
     tempImportData = validatedSheets;
     setupSheetImportFilters();
     
@@ -1776,7 +1856,6 @@ function processImportedSheets(data, replace) {
     applyBtn.parentNode.replaceChild(newApplyBtn, applyBtn);
 
     newApplyBtn.onclick = () => {
-        // Phase 3: Apply Filters and Finalize Import
         const selectedTypes = getSelectedFilterValues('filter-types-container');
         const selectedFeatures = getSelectedFilterValues('filter-features-container');
         const selectedThicknesses = getSelectedFilterValues('filter-thicknesses-container').map(t => parseFloat(t));
@@ -1810,67 +1889,17 @@ function processImportedSheets(data, replace) {
         saveDataToLocalStorage();
         
         let successMessage = `عملیات با موفقیت انجام شد.\n\nتعداد ${finalSheetsToImport.length} سفارش برش جدید وارد شد.`;
-        if (ignoredRowsCount > 0) {
-            successMessage += `\n\nتوجه: تعداد ${ignoredRowsCount} ردیف از فایل به دلیل عدم وجود کویل منطبق نادیده گرفته شدند.`;
+        let ignoredDetails = [];
+        if (ignoredDuplicateCount > 0) ignoredDetails.push(`${ignoredDuplicateCount} ردیف تکراری`);
+        if (ignoredNoCoilCount > 0) ignoredDetails.push(`${ignoredNoCoilCount} ردیف بدون کویل منطبق`);
+        
+        if (ignoredDetails.length > 0) {
+             successMessage += `\n\nتوجه: ${ignoredDetails.join(' و ')} نادیده گرفته شدند.`;
         }
         alert(successMessage);
     };
 }
 
-
-/**
- * Validates a single sheet order row from an imported Excel file.
- * @param {object} sheet - The sheet order object to validate.
- * @param {number} rowIndex - The row number from the Excel file for error reporting.
- * @param {Array<object>} newSheetsInBatch - Sheets already validated in the current import batch.
- * @param {boolean} replace - Whether the import is a replacement operation.
- * @returns {string|null} An error message string if invalid, or null if valid.
- */
-function validateSheetOrderFromImport(sheet, rowIndex, newSheetsInBatch, replace) {
-    if (!sheet.companyCode || !sheet.type || !sheet.feature || isNaN(sheet.length) || isNaN(sheet.width) || isNaN(sheet.thickness)) {
-        return `ردیف ${rowIndex}: داده‌های ناقص. تمام ستون‌ها (کد، نوع، ویژگی، طول، عرض، ضخامت) باید پر شوند.`;
-    }
-
-    if (!/^\d{6,7}$/.test(sheet.companyCode)) {
-        return `ردیف ${rowIndex}: کد انبار ورق (${sheet.companyCode}) باید ۶ یا ۷ رقمی باشد.`;
-    }
-
-    if (sheet.width > sheet.length) {
-        return `ردیف ${rowIndex}: عرض (${sheet.width}) نمی‌تواند بیشتر از طول (${sheet.length}) باشد.`;
-    }
-    
-    // ** FIX: Only check for duplicates in existing data if we are APPENDING (replace is false) **
-    const isCodeDuplicateInExisting = !replace && sheetOrders.some(s => s.companyCode === sheet.companyCode);
-    const isCodeDuplicateInBatch = newSheetsInBatch.some(s => s.companyCode === sheet.companyCode);
-    if (isCodeDuplicateInExisting || isCodeDuplicateInBatch) {
-        return `ردیف ${rowIndex}: کد انبار (${sheet.companyCode}) تکراری است (در برنامه یا در خود فایل اکسل).`;
-    }
-    
-    const isSpecDuplicateInExisting = !replace && sheetOrders.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width);
-    const isSpecDuplicateInBatch = newSheetsInBatch.some(s => s.type === sheet.type && s.feature === sheet.feature && s.thickness === sheet.thickness && s.length === sheet.length && s.width === sheet.width);
-    if (isSpecDuplicateInExisting || isSpecDuplicateInBatch) {
-        return `ردیف ${rowIndex}: ابعاد برشی با مشخصات یکسان قبلاً ثبت شده یا در فایل اکسل تکرار شده است.`;
-    }
-    
-    if (!Object.keys(settings.densities).includes(sheet.type)) {
-        return `ردیف ${rowIndex}: نوع ورق '${sheet.type}' در تنظیمات برنامه تعریف نشده است.`;
-    }
-    if (!settings.features.includes(sheet.feature)) {
-        return `ردیف ${rowIndex}: ویژگی '${sheet.feature}' در تنظیمات برنامه تعریف نشده است.`;
-    }
-
-    const hasMatchingCoil = coils.some(coil => 
-        coil.type === sheet.type &&
-        coil.feature === sheet.feature &&
-        coil.thickness === sheet.thickness
-    );
-
-    if (!hasMatchingCoil) {
-        return `ردیف ${rowIndex}: هیچ کویلی با مشخصات (نوع: '${sheet.type}', ویژگی: '${sheet.feature}', ضخامت: ${sheet.thickness}) یافت نشد.`;
-    }
-
-    return null;
-}
 
 // --- CASCADING IMPORT FILTERS LOGIC ---
 
